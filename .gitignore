@@ -30,3 +30,5 @@
 # AppCode project files.
 .idea
 *xcodeproj
+*.mesh
+*.m
