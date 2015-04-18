@@ -305,14 +305,15 @@ bool PM::SaveMesh(const char filename[]) {
     int vSize = tMesh->numVertices();
     int fSize = tMesh->numFaces();
     int eSize = tMesh->numEdges();
-
+//    output << vSize << " " << fSize << " " << eSize;
     for (int i = 0; i < vSize; ++i) {
         Vertex *v = tMesh->m_verts[i];
         if (!v) continue;
 //        output << "Vertex " << v->index() + 1 << " " << v->point();
-        if (!v->PropertyStr().empty())
+        if (!v->PropertyStr().empty()) {
             output << " {" << v->PropertyStr() << "}";
-        output << "\n";
+            output << "\n";
+        }
     }
     for (int i = 0; i < fSize; ++i) {
         Face *f = tMesh->m_faces[i];
