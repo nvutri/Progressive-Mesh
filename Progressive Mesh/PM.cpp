@@ -409,7 +409,7 @@ void PM::GetValidTmpMesh() {
 
     for (std::vector<Vertex *>::iterator viter = tMesh->m_verts.begin(); viter != tMesh->m_verts.end(); ++viter) {
         Vertex *v = *viter;
-        Vertex *nv = tmpMesh->createVertex();
+        Vertex *nv = tmpMesh->createVertex(v->index());
         if (!v) {
             nv->PropertyStr() = "invalid";
             continue;

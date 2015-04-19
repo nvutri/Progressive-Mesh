@@ -91,14 +91,16 @@ Halfedge *Mesh::idHalfedge(int srcVID, int trgVID) { //Check the surrounding out
         return vertexHalfedge(v0, v1);
 }
 
-
-
 //create new geometric simplexes
-
-Vertex *Mesh::createVertex() {
+Vertex *Mesh::createVertex(int vertexId) {
     Vertex *v = new Vertex;
-    v->index() = m_verts.size();
-    m_verts.push_back(v);
+    vertexId -= 1;
+    v->index() = vertexId;
+    if (vertexId >= m_verts.size()) {
+        unsigned long newSize = (vertexId > m_verts.size() * 2) ? vertexId + 1000 : m_verts.size()* 2 + 1;
+        m_verts.resize(newSize);
+    }
+    m_verts[vertexId] = v;
     return v;
 }
 
@@ -163,11 +165,11 @@ Face *Mesh::createFace(Vertex *verts[3]) {
         Vertex *ev0 = verts[i]; // target
         Vertex *ev1 = verts[(i + 2) % 3]; // source
         Edge *e = NULL;
-        //The new halfedge is [ev1, ev0]:
-        //			should we generate a new edge with these two vertices?
-        //			not necessary: if [ev0, ev1] was an existing halfedge
-        //So, we shall check whether halfedge [ev0,ev1] was created and added into the mesh before,
-        //		We had the container of one-ring incoming half-edges of ev1
+        // The new halfedge is [ev1, ev0]:
+        // should we generate a new edge with these two vertices?
+        // not necessary: if [ev0, ev1] was an existing halfedge
+        // So, we shall check whether halfedge [ev0,ev1] was created and added into the mesh before,
+        // We had the container of one-ring incoming half-edges of ev1
         std::vector<Halfedge *> &adjInHEList = v_adjInHEList[ev1->index()];
         for (int j = 0; j < adjInHEList.size(); ++j) {
             Halfedge *he = adjInHEList[j];
@@ -223,20 +225,19 @@ bool Mesh::readMFile(const char inputFile[]) {
 
         if (!strcmp(str, "Vertex")) { //parsing a line of vertex element
             str = strtok(NULL, " \r\n{");
-            int id = atoi(str);
-            Vertex *v = createVertex(); // Note: the index in M File starts with 1, while our default index starts with 0
-
-            //parsing (x,y,z)
+            int vertexId = atoi(str);
+            Vertex *v = createVertex(vertexId); // Note: the index in M File starts with 1, while our default index starts with 0
+            // Parsing (x,y,z)
             for (int i = 0; i < 3; i++) {
                 str = strtok(NULL, " \r\n{");
                 v->point()[i] = atof(str);
             }
 
-            //Storing the neighboring halfedges, for efficient edge searching in the initialization stage
+            // Storing the neighboring halfedges, for efficient edge searching in the initialization stage
             std::vector<Halfedge *> heList;
             v_adjInHEList.push_back(heList);
 
-            //parsing the property string
+            // Parsing the property string
             str = strtok(NULL, "\r\n");
             if (!str || strlen(str) == 0) continue;
             std::string s(str);
@@ -250,7 +251,7 @@ bool Mesh::readMFile(const char inputFile[]) {
 
             str = strtok(NULL, " \r\n");
             if (!str || strlen(str) == 0) continue;
-            int id = atoi(str);
+            int faceId = atoi(str);
             int vids[3];
             for (int i = 0; i < 3; i++) {
                 str = strtok(NULL, " \r\n{");
@@ -339,7 +340,7 @@ void Mesh::copyTo(Mesh &tMesh) {
     for (std::vector<Vertex *>::iterator viter = m_verts.begin();
          viter != m_verts.end(); ++viter) {
         Vertex *v = *viter;
-        Vertex *nv = tMesh.createVertex();
+        Vertex *nv = tMesh.createVertex(v->index());
         nv->point() = v->point();
         nv->PropertyStr() = v->PropertyStr();
         nv->boundary() = v->boundary();
