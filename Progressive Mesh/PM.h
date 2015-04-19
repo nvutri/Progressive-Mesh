@@ -46,8 +46,9 @@ namespace XMeshLib {
 
         bool SaveMesh(const char filename[]);
 
-        //The temporal mesh stored in tMesh cannot be directly written or copied, due to the unremoved isolated vertices (I keep them on purpose).
-        //This following function converts it to a valid mesh and stores it in tmpMesh;
+        // The temporal mesh stored in tMesh cannot be directly written or copied,
+        // due to the unremoved isolated vertices (I keep them on purpose).
+        // This following function converts it to a valid mesh and stores it in tmpMesh;
         void GetValidTmpMesh();
 
     public:
@@ -56,7 +57,7 @@ namespace XMeshLib {
         int baseMeshResolution;
         std::vector <VSplitRecord> vsRecList;
         std::vector<int> tmpInd2OInd;
-        //std::vector<int> oInd2TmpInd;
+        // std::vector<int> oInd2TmpInd;
 
     protected:
         Vertex *CreateVertex();

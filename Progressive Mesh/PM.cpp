@@ -1,14 +1,8 @@
 #include "PM.h"
 #include <cassert>
-#include <vector>
 #include <fstream>
 
 #ifdef __APPLE__
-
-#include <OpenGL/OpenGL.h>
-#include <GLUT/glut.h>
-#include "MeshLib_Core/Mesh.h"
-#include "MeshLib_Core/Iterators.h"
 
 #else
 #include <GL/glut.h>
@@ -16,6 +10,7 @@
 #include "MeshLib_Core\Iterators.h"
 #include "Utils\Heaps\Fib_Heap.h"
 #endif
+
 #include "XLibCommon.h"
 
 using namespace XMeshLib;
@@ -24,7 +19,7 @@ void PM::SetEdgePriority() {
 
 }
 
-bool PM::CheckEdgeCollapseCondition(Edge * e) {
+bool PM::CheckEdgeCollapseCondition(Edge *e) {
     Halfedge *he = e->he(0);
     Vertex *v1 = he->source();
     Vertex *v2 = he->target();
@@ -107,7 +102,7 @@ Vertex *PM::EdgeCollapse(Edge *e, VSplitRecord &vsRec) {
     vsRec.vt = vt;
     vsRec.old_vs_pt = vs->point();
     vs->point() = (vs->point() + vt->point()) / 2;
-    //DeleteVertex(vt);
+    // Equal effect as DeleteVertex(vt);
     tMesh->m_verts[vt->index()] = NULL;
     DeleteEdge(e);
     DeleteEdge(de1);
@@ -232,7 +227,7 @@ Vertex *PM::CreateVertex() {
     return v;
 }
 
-Edge *PM::CreateEdge(Halfedge * he0, Halfedge * he1) {
+Edge *PM::CreateEdge(Halfedge *he0, Halfedge *he1) {
     Edge *e = new Edge(he0, he1);
     int eNum = tMesh->m_edges.size();
     if (!eNum)
@@ -243,7 +238,7 @@ Edge *PM::CreateEdge(Halfedge * he0, Halfedge * he1) {
     return e;
 }
 
-void PM::DeleteFace(Face * f) {
+void PM::DeleteFace(Face *f) {
     std::vector<Face *> &fList = tMesh->m_faces;
     std::vector<Face *>::iterator fPos = std::find(fList.begin(), fList.end(), f);
     assert(fPos != fList.end());
@@ -251,7 +246,7 @@ void PM::DeleteFace(Face * f) {
     delete f;
 }
 
-void PM::DeleteVertex(Vertex * v) {
+void PM::DeleteVertex(Vertex *v) {
     std::vector<Vertex *> &vList = tMesh->m_verts;
     std::vector<Vertex *>::iterator vPos = std::find(vList.begin(), vList.end(), v);
     assert(vPos != vList.end());
@@ -259,7 +254,7 @@ void PM::DeleteVertex(Vertex * v) {
     delete v;
 }
 
-void PM::DeleteEdge(Edge * e) {
+void PM::DeleteEdge(Edge *e) {
     std::vector<Edge *> &eList = tMesh->m_edges;
     std::vector<Edge *>::iterator ePos = std::find(eList.begin(), eList.end(), e);
     assert(ePos != eList.end());
@@ -267,12 +262,12 @@ void PM::DeleteEdge(Edge * e) {
     delete e;
 }
 
-void PM::printE(Edge * e) {
+void PM::printE(Edge *e) {
     printHE(e->he(0));
     printHE(e->he(1));
 }
 
-void PM::printHE(Halfedge * he) {
+void PM::printHE(Halfedge *he) {
     if (he == NULL)
         std::cout << "NULL \n";
     else
@@ -305,7 +300,7 @@ bool PM::SaveMesh(const char filename[]) {
     int vSize = tMesh->numVertices();
     int fSize = tMesh->numFaces();
     int eSize = tMesh->numEdges();
-//    output << vSize << " " << fSize << " " << eSize;
+    std::cout << "\nvSize: " << vSize << "\nfSize: " << fSize << "\neSize: " << eSize << std::endl;
     for (int i = 0; i < vSize; ++i) {
         Vertex *v = tMesh->m_verts[i];
         if (!v) continue;
@@ -322,7 +317,7 @@ bool PM::SaveMesh(const char filename[]) {
         int vid0 = the0->source()->index() + 1;
         int vid1 = the0->target()->index() + 1;
         int vid2 = the1->target()->index() + 1;
-        output << "Face " << f->index() + 1 << " " << vid0 << " " << vid1 << " " << vid2;
+        output << "Face " << f->index() + 1 << " " << vid0 << " " << vid1 << " " << vid2 << "\n";
         if (!f->PropertyStr().empty()) {
             output << " {" << f->PropertyStr() << "}";
             output << "\n";
@@ -375,9 +370,9 @@ void PM::ProcessCoarsening(int targetVertSize) {
         XMeshLib::VSplitRecord vsRec;
         EdgeCollapse(cE, vsRec);
         vsRecList.push_back(vsRec);
-        //std::cout << "after " << iter << "iterations:";
-        //std::string fname = GenerateIndexedFileName("coarse", iterNum-iter-1, ".m");
-        //SaveTemporaryMesh(fname.c_str());
+        // std::cout << "after " << iter << "iterations:";
+        // std::string fname = GenerateIndexedFileName("coarse", iterNum-iter-1, ".m");
+        // SaveTemporaryMesh(fname.c_str());
     }
     SaveMesh("baseMesh.m");
     WriteVsplitRecord("vSplitRecord.txt", vsRecList);
