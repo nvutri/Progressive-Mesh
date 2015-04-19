@@ -58,7 +58,7 @@ public:
         return !(he->twin());
     }
 
-    //indexing elements
+    // Indexing elements
     Vertex *indVertex(unsigned int ind) {
         return (ind >= m_verts.size() ? NULL : m_verts[ind]);
     }
@@ -84,13 +84,16 @@ public:
 
     Face *createFace();
 
+    Face *createFace(int faceId);
+
+    Face *createFace(int faceId, Vertex *verts[]);
+
+    Face *createFace(int faceId, int vIds[]);
+
     Edge *createEdge();
 
     Edge *createEdge(Halfedge *he0, Halfedge *he1);
 
-    Face *createFace(Vertex *verts[]);
-
-    Face *createFace(int vIds[]);
 
     void LabelBoundaryVertices();
 

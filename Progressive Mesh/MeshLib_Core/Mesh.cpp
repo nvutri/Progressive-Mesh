@@ -104,11 +104,22 @@ Vertex *Mesh::createVertex(int vertexId) {
     return v;
 }
 
-
 Face *Mesh::createFace() {
     Face *f = new Face();
     f->index() = m_faces.size();
     m_faces.push_back(f);
+    return f;
+}
+
+Face *Mesh::createFace(int faceId) {
+    Face *f = new Face();
+    faceId -= 1;
+    f->index() = faceId;
+    if (faceId >= m_faces.size()) {
+        unsigned long newSize = (faceId > m_faces.size() * 2) ? faceId + 1000 : m_faces.size()* 2 + 1;
+        m_faces.resize(newSize);
+    }
+    m_faces[faceId] = f;
     return f;
 }
 
@@ -127,7 +138,7 @@ Edge *Mesh::createEdge(Halfedge *he0, Halfedge *he1) {
 }
 
 
-Face *Mesh::createFace(int v[3]) {
+Face *Mesh::createFace(int faceId, int v[3]) {
     Vertex *verts[3];
     for (int i = 0; i < 3; i++) {
         verts[i] = indVertex(v[i]);
@@ -137,13 +148,13 @@ Face *Mesh::createFace(int v[3]) {
             return NULL;
         }
     }
-    Face *f = createFace(verts);
+    Face *f = createFace(faceId, verts);
     return f;
 }
 
-Face *Mesh::createFace(Vertex *verts[3]) {
+Face *Mesh::createFace(int faceId, Vertex *verts[3]) {
     int i;
-    Face *f = createFace();
+    Face *f = createFace(faceId);
     //create Half-edges
     Halfedge *hes[3];
     for (i = 0; i < 3; i++) {
@@ -257,7 +268,7 @@ bool Mesh::readMFile(const char inputFile[]) {
                 str = strtok(NULL, " \r\n{");
                 vids[i] = atoi(str) - 1; //Note: the index in M File starts with 1, while our default index starts with 0
             }
-            Face *f = createFace(vids);
+            Face *f = createFace(faceId, vids);
             if (!str) continue;
             str = strtok(NULL, "\r\n");
             if (!str || strlen(str) == 0) continue;
