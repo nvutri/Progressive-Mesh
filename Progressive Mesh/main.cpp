@@ -9,7 +9,7 @@
 #endif
 
 #include "PM.h"
-
+#include "Render.h"
 using namespace XMeshLib;
 
 int main(int argc, char **argv) {
@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
     PM cpm(cmesh);
     cpm.ProcessCoarsening(100);
     cpm.ProcessRefinement();
+    Render::begin(argc, argv, cmesh);
     delete cmesh;
     return 0;
 }
-
