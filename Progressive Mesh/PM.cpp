@@ -323,9 +323,10 @@ bool PM::SaveMesh(const char filename[]) {
         int vid1 = the0->target()->index() + 1;
         int vid2 = the1->target()->index() + 1;
         output << "Face " << f->index() + 1 << " " << vid0 << " " << vid1 << " " << vid2;
-        if (!f->PropertyStr().empty())
+        if (!f->PropertyStr().empty()) {
             output << " {" << f->PropertyStr() << "}";
-        output << "\n";
+            output << "\n";
+        }
     }
 
     for (int i = 0; i < eSize; ++i) {
@@ -391,11 +392,12 @@ void PM::ProcessRefinement(int targetVertSize) {
         if (iterNum > vsRecList.size())
             iterNum = vsRecList.size();
     }
+    std::cout << "Iter Number: " << iterNum << std::endl;
     for (int iter = iterNum - 1; iter >= 0; --iter) {
         XMeshLib::VSplitRecord &vsRec = vsRecList[iter];
         VertexSplit(vsRec);
-        //std::string fname = GenerateIndexedFileName("refine", iterNum-iter, ".m");
-        //SaveTemporaryMesh(fname.c_str());
+        // std::string fname = GenerateIndexedFileName("refine", iterNum-iter, ".m");
+        // SaveTemporaryMesh(fname.c_str());
         vsRecList.pop_back();
     }
     std::string fname = GenerateIndexedFileName("refine", (baseMeshResolution + iterNum), ".m");
