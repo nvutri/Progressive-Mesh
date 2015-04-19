@@ -91,24 +91,16 @@ Halfedge *Mesh::idHalfedge(int srcVID, int trgVID) { //Check the surrounding out
         return vertexHalfedge(v0, v1);
 }
 
-//create new geometric simplexes
+// Create new geometric simplexes
 Vertex *Mesh::createVertex(int vertexId) {
     Vertex *v = new Vertex;
     vertexId -= 1;
     v->index() = vertexId;
     if (vertexId >= m_verts.size()) {
-        unsigned long newSize = (vertexId > m_verts.size() * 2) ? vertexId + 1000 : m_verts.size()* 2 + 1;
-        m_verts.resize(newSize);
+        m_verts.resize(vertexId + 1);
     }
     m_verts[vertexId] = v;
     return v;
-}
-
-Face *Mesh::createFace() {
-    Face *f = new Face();
-    f->index() = m_faces.size();
-    m_faces.push_back(f);
-    return f;
 }
 
 Face *Mesh::createFace(int faceId) {
@@ -116,8 +108,7 @@ Face *Mesh::createFace(int faceId) {
     faceId -= 1;
     f->index() = faceId;
     if (faceId >= m_faces.size()) {
-        unsigned long newSize = (faceId > m_faces.size() * 2) ? faceId + 1000 : m_faces.size()* 2 + 1;
-        m_faces.resize(newSize);
+        m_faces.resize(faceId + 1);
     }
     m_faces[faceId] = f;
     return f;
@@ -360,7 +351,7 @@ void Mesh::copyTo(Mesh &tMesh) {
     std::vector<Face *>::iterator fiter = m_faces.begin();
     for (; fiter != m_faces.end(); ++fiter) {
         Face *f = *fiter;
-        Face *nf = tMesh.createFace();
+        Face *nf = tMesh.createFace(f->index());
         Halfedge *he[3];
         Halfedge *nhe[3];
         he[0] = f->he();

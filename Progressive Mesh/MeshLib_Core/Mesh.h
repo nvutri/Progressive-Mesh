@@ -82,8 +82,6 @@ public:
     //(4) Mesh Modification Operators
     Vertex *createVertex(int vertexId);
 
-    Face *createFace();
-
     Face *createFace(int faceId);
 
     Face *createFace(int faceId, Vertex *verts[]);
