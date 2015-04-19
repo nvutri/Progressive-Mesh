@@ -304,7 +304,8 @@ bool PM::SaveMesh(const char filename[]) {
     for (int i = 0; i < vSize; ++i) {
         Vertex *v = tMesh->m_verts[i];
         if (!v) continue;
-//        output << "Vertex " << v->index() + 1 << " " << v->point();
+        output << "Vertex " << v->index() + 1 << " "
+                << v->point().v[0] << " " << v->point().v[1] << " " << v->point().v[2] << "\n";
         if (!v->PropertyStr().empty()) {
             output << " {" << v->PropertyStr() << "}";
             output << "\n";
