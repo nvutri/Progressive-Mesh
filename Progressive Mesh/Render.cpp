@@ -74,18 +74,6 @@ void Render::reshape(int w, int h) {
 void Render::begin(int argc, char **argv, Mesh *renderMesh) {
 
     pmesh = renderMesh;
-    if (argc != 2) {
-        std::cout << "HW1: Read a .obj file and render it in its boundingbox.\n";
-        std::cout << "Usage: " << argv[0] << " input_mesh.obj\n";
-        return;
-    }
-
-    // Read the obj mesh.
-    bool flag = pmesh->readMFile(argv[1]);
-    if (!flag) {
-        std::cerr << "Fail to read " << argv[1] << "\n";
-        return;
-    }
 
     ComputeBoundingBox();
     ComputeNormal();
@@ -446,7 +434,7 @@ void Render::BFSQueueComponent(Face *f) {
                 he->clw_rotate_about_target()
         };
         for (int i = 0; i < neighborHalfEdges.size(); ++i)
-            if (neighborHalfEdges[i] and neighborHalfEdges[i]->face()) {
+            if (neighborHalfEdges[i] && neighborHalfEdges[i]->face()) {
                 Face *neighborFace = neighborHalfEdges[i]->face();
                 if (neighborFace->PropertyStr().compare(FALSE_MARK) == 0) {
                     neighborFace->PropertyStr() = TRUE_MARK;
@@ -495,7 +483,7 @@ void Render::BFSQueueBoundary(Edge *edge) {
                 source->most_clw_out_halfedge(),
         };
         for (int i = 0; i < neighborHalfEdges.size(); ++i)
-            if (neighborHalfEdges[i] and neighborHalfEdges[i]->face()) {
+            if (neighborHalfEdges[i] && neighborHalfEdges[i]->face()) {
                 Edge *neighborEdge = neighborHalfEdges[i]->edge();
                 if (neighborEdge->PropertyStr().compare(FALSE_MARK) == 0) {
                     neighborEdge->PropertyStr() = TRUE_MARK;

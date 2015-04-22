@@ -149,7 +149,7 @@ Face *Mesh::createFace(int faceId, Vertex *verts[3]) {
     //create Half-edges
     Halfedge *hes[3];
     for (i = 0; i < 3; i++) {
-        hes[i] = new Halfedge;
+        hes[i] = new Halfedge();
         hes[i]->target() = verts[i];
         verts[i]->he() = hes[i];
         std::vector<Halfedge *> &adjInHEList = v_adjInHEList[verts[i]->index()];
@@ -237,7 +237,10 @@ bool Mesh::readMFile(const char inputFile[]) {
 
             // Storing the neighboring halfedges, for efficient edge searching in the initialization stage
             std::vector<Halfedge *> heList;
-            v_adjInHEList.push_back(heList);
+            if (v->index() >= v_adjInHEList.size()) {
+                v_adjInHEList.resize(v->index() + 1);
+            }
+            v_adjInHEList[v->index()] = heList;
 
             // Parsing the property string
             str = strtok(NULL, "\r\n");
@@ -286,7 +289,8 @@ bool Mesh::readMFile(const char inputFile[]) {
             he1->index() = heInd++;
     }
 
-    //After initialization, the neighboring halfedges list is not needed anymore; remove them to save space
+    // After initialization, the neighboring halfedges list is not needed anymore; remove them to save space
+    v_adjInHEList.resize(m_verts.size());
     for (int i = 0; i < v_adjInHEList.size(); ++i)
         v_adjInHEList[i].clear();
     v_adjInHEList.clear();

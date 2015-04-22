@@ -424,7 +424,7 @@ void PM::GetValidTmpMesh() {
     for (; fiter != tMesh->m_faces.end(); ++fiter) {
         Face *f = *fiter;
         f->index() = cfind++;
-        Face *nf = tmpMesh->createFace();
+        Face *nf = tmpMesh->createFace(f->index());
         Halfedge *he[3];
         Halfedge *nhe[3];
         he[0] = f->he();

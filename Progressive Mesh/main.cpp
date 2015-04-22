@@ -9,6 +9,7 @@
 #endif
 
 #include "PM.h"
+#include "Render.h"
 using namespace XMeshLib;
 
 int main(int argc, char **argv) {
@@ -18,5 +19,8 @@ int main(int argc, char **argv) {
     cpm.ProcessCoarsening(100);
     cpm.ProcessRefinement();
     delete cmesh;
+    Mesh *baseMesh = new Mesh;
+    baseMesh->readMFile("baseMesh.m");
+    Render::begin(argc, argv, baseMesh);
     return 0;
 }
