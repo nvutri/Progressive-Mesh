@@ -348,9 +348,8 @@ void Render::MyInit() {
 Computer normal for all faces.
 */
 void Render::ComputeNormal() {
-    normalVertexes.reserve((unsigned long) pmesh->numFaces());
-    vertexesGaussian.reserve((unsigned long) pmesh->numVertices());
-
+    normalVertexes.resize((unsigned long) pmesh->numFaces());
+    vertexesGaussian.resize((unsigned long) pmesh->numVertices());
     for (MeshFaceIterator fit(pmesh); !fit.end(); ++fit) {
         Face *f = *fit;
         if (f) {
