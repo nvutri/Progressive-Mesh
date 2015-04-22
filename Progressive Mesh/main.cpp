@@ -14,13 +14,16 @@ using namespace XMeshLib;
 
 int main(int argc, char **argv) {
     Mesh *cmesh = new Mesh;
-    cmesh->readMFile(argv[1]);
-    PM cpm(cmesh);
-    cpm.ProcessCoarsening(100);
-    cpm.ProcessRefinement();
-    delete cmesh;
+    if (argv[1]) {
+        cmesh->readMFile(argv[1]);
+        PM cpm(cmesh);
+        cpm.ProcessCoarsening(100);
+        cpm.ProcessRefinement();
+        delete cmesh;
+    }
     Mesh *baseMesh = new Mesh;
     baseMesh->readMFile("baseMesh.m");
+    std::cout << baseMesh->numVertices() << " " << baseMesh->numFaces() << std::endl;
     Render::begin(argc, argv, baseMesh);
     return 0;
 }

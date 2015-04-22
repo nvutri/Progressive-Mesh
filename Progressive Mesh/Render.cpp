@@ -74,7 +74,6 @@ void Render::reshape(int w, int h) {
 void Render::begin(int argc, char **argv, Mesh *renderMesh) {
 
     pmesh = renderMesh;
-
     ComputeBoundingBox();
     ComputeNormal();
 
@@ -242,23 +241,25 @@ void Render::Render_Mesh() {
     //traverse all the face and draw them
     for (MeshFaceIterator fit(pmesh); !fit.end(); ++fit) {
         Face *f = *fit;
-        Halfedge *he = f->he();
-        Vertex *v1 = he->source();
-        Vertex *v2 = he->target();
-        Vertex *v3 = he->next()->target();
-        glBegin(GL_TRIANGLES);
-        glNormal3d(0, 0, 0);
-        FaceNormal normFace = normalVertexes[f->index()];
-        VertexNormalDisplay(normFace.v1);
-        GaussianColorCode(v1);
-        glVertex3dv(v1->point().v);
-        VertexNormalDisplay(normFace.v2);
-        GaussianColorCode(v2);
-        glVertex3dv(v2->point().v);
-        VertexNormalDisplay(normFace.v3);
-        GaussianColorCode(v3);
-        glVertex3dv(v3->point().v);
-        glEnd();
+        if (f) {
+            Halfedge *he = f->he();
+            Vertex *v1 = he->source();
+            Vertex *v2 = he->target();
+            Vertex *v3 = he->next()->target();
+            glBegin(GL_TRIANGLES);
+            glNormal3d(0, 0, 0);
+            FaceNormal normFace = normalVertexes[f->index()];
+            VertexNormalDisplay(normFace.v1);
+            GaussianColorCode(v1);
+            glVertex3dv(v1->point().v);
+            VertexNormalDisplay(normFace.v2);
+            GaussianColorCode(v2);
+            glVertex3dv(v2->point().v);
+            VertexNormalDisplay(normFace.v3);
+            GaussianColorCode(v3);
+            glVertex3dv(v3->point().v);
+            glEnd();
+        }
     }
 }
 
@@ -274,15 +275,18 @@ void Render::ComputeBoundingBox() {
 
     for (MeshVertexIterator vit(pmesh); !vit.end(); ++vit) {
         Vertex *v = *vit;
-        Point &p = v->point();
-        for (int j = 0; j < 3; ++j) {
-            float value = float(p.v[j]);
-            objCenter[j] += value;
-            if (boxMax[j] < value)
-                boxMax[j] = value;
-            if (boxMin[j] > value)
-                boxMin[j] = value;
+        if (v) {
+            Point &p = v->point();
+            for (int j = 0; j < 3; ++j) {
+                float value = float(p.v[j]);
+                objCenter[j] += value;
+                if (boxMax[j] < value)
+                    boxMax[j] = value;
+                if (boxMin[j] > value)
+                    boxMin[j] = value;
+            }
         }
+
     }
     axislen = float(sqrt((boxMax[2] - boxMin[2]) * (boxMax[2] - boxMin[2]) +
             (boxMax[1] - boxMin[1]) * (boxMax[1] - boxMin[1]) +
@@ -349,16 +353,18 @@ void Render::ComputeNormal() {
 
     for (MeshFaceIterator fit(pmesh); !fit.end(); ++fit) {
         Face *f = *fit;
-        Halfedge *he = f->he();
-        // Get the vertex normal for every vertex.
-        FaceNormal fn;
-        fn.v1 = ComputeVertexNormal(he->source());
-        fn.v2 = ComputeVertexNormal(he->target());
-        fn.v3 = ComputeVertexNormal(he->next()->target());
+        if (f) {
+            Halfedge *he = f->he();
+            // Get the vertex normal for every vertex.
+            FaceNormal fn;
+            fn.v1 = ComputeVertexNormal(he->source());
+            fn.v2 = ComputeVertexNormal(he->target());
+            fn.v3 = ComputeVertexNormal(he->next()->target());
 
-        // Save the normal vector to a similar structure
-        // for using glNormal later.
-        normalVertexes[f->index()] = fn;
+            // Save the normal vector to a similar structure
+            // for using glNormal later.
+            normalVertexes[f->index()] = fn;
+        }
     }
 }
 
@@ -399,12 +405,15 @@ int Render::CalculateComponents() {
     int counter = 0;
     for (MeshFaceIterator fit(pmesh); !fit.end(); ++fit) {
         Face *f = *fit;
-        std::string propertyStr = f->PropertyStr();
-        if (propertyStr.compare(FALSE_MARK) == 0) {
-            ++counter;
-            f->PropertyStr() = TRUE_MARK;
-            BFSQueueComponent(f);
+        if (f) {
+            std::string propertyStr = f->PropertyStr();
+            if (propertyStr.compare(FALSE_MARK) == 0) {
+                ++counter;
+                f->PropertyStr() = TRUE_MARK;
+                BFSQueueComponent(f);
+            }
         }
+
     }
     std::cout << "Components: " << counter << std::endl;
     return counter;
