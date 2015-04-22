@@ -5,10 +5,13 @@
 #ifdef __APPLE__
 
 #else
-#include <GL/glut.h>
+//#include <GL\glut.h>
+#include <cstdlib>
+#include <vector>
+#include <algorithm>
 #include "MeshLib_Core\Mesh.h"
 #include "MeshLib_Core\Iterators.h"
-#include "Utils\Heaps\Fib_Heap.h"
+//#include "Utils\Heaps\Fib_Heap.h"
 #endif
 
 #include "XLibCommon.h"
@@ -375,7 +378,7 @@ void PM::ProcessCoarsening(int targetVertSize) {
         // std::string fname = GenerateIndexedFileName("coarse", iterNum-iter-1, ".m");
         // SaveTemporaryMesh(fname.c_str());
     }
-    SaveMesh("baseMesh.m");
+    SaveMesh("baseMesh.mesh");
     WriteVsplitRecord("vSplitRecord.txt", vsRecList);
 }
 
@@ -396,7 +399,7 @@ void PM::ProcessRefinement(int targetVertSize) {
         // SaveTemporaryMesh(fname.c_str());
         vsRecList.pop_back();
     }
-    std::string fname = GenerateIndexedFileName("refine", (baseMeshResolution + iterNum), ".m");
+    std::string fname = GenerateIndexedFileName("refine", (baseMeshResolution + iterNum), ".mesh");
     SaveMesh(fname.c_str());
 }
 
@@ -424,7 +427,7 @@ void PM::GetValidTmpMesh() {
     for (; fiter != tMesh->m_faces.end(); ++fiter) {
         Face *f = *fiter;
         f->index() = cfind++;
-        Face *nf = tmpMesh->createFace();
+        Face *nf = tmpMesh->createFace(f->index());
         Halfedge *he[3];
         Halfedge *nhe[3];
         he[0] = f->he();

@@ -6,7 +6,6 @@
 #include "MeshLib_Core/Iterators.h"
 
 #else
-#include <GL/glut.h>
 #include "MeshLib_Core\Mesh.h"
 #include "MeshLib_Core\Iterators.h"
 #endif

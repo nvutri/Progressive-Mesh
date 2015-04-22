@@ -3,7 +3,6 @@
 #include "MeshLib_Core/Mesh.h"
 
 #else
-#include <GL/glut.h>
 #include "MeshLib_Core\Mesh.h"
 #include "MeshLib_Core\Iterators.h"
 #endif
@@ -18,5 +17,6 @@ int main(int argc, char **argv) {
     cpm.ProcessCoarsening(100);
     cpm.ProcessRefinement();
     delete cmesh;
+	system("pause");
     return 0;
 }

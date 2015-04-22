@@ -3,6 +3,9 @@
 * LSU ID: 89-6534216
 * PAWS: tngu418
 */
+#define M_PI
+#include <stdlib.h>
+#include <GL\glut.h>
 #include "Render.h"
 #include <fstream>
 #include <sstream>
@@ -439,14 +442,13 @@ void Render::BFSQueueComponent(Face *f) {
         edgeSet.insert(fEntry->he()->prev()->edge());
         faceQueue.pop();
         Halfedge *he = fEntry->he();
-        std::vector<Halfedge *> neighborHalfEdges = {
-                he->ccw_rotate_about_source(),
-                he->clw_rotate_about_source(),
-                he->ccw_rotate_about_target(),
-                he->clw_rotate_about_target()
-        };
+        std::vector<Halfedge *> neighborHalfEdges;
+		neighborHalfEdges.push_back(he->ccw_rotate_about_source());
+        neighborHalfEdges.push_back(he->clw_rotate_about_source());
+        neighborHalfEdges.push_back(he->ccw_rotate_about_target());
+        neighborHalfEdges.push_back(he->clw_rotate_about_target());
         for (int i = 0; i < neighborHalfEdges.size(); ++i)
-            if (neighborHalfEdges[i] and neighborHalfEdges[i]->face()) {
+            if (neighborHalfEdges[i] && neighborHalfEdges[i]->face()) {
                 Face *neighborFace = neighborHalfEdges[i]->face();
                 if (neighborFace->PropertyStr().compare(FALSE_MARK) == 0) {
                     neighborFace->PropertyStr() = TRUE_MARK;
@@ -488,14 +490,13 @@ void Render::BFSQueueBoundary(Edge *edge) {
         if (!he)
             he = edgeEntry->he(1);
         Vertex *source = he->source();
-        std::vector<Halfedge *> neighborHalfEdges = {
-                source->most_ccw_in_halfedge(),
-                source->most_ccw_out_halfedge(),
-                source->most_clw_in_halfedge(),
-                source->most_clw_out_halfedge(),
-        };
+        std::vector<Halfedge *> neighborHalfEdges;
+        neighborHalfEdges.push_back(source->most_ccw_in_halfedge());
+        neighborHalfEdges.push_back(source->most_ccw_out_halfedge());
+        neighborHalfEdges.push_back(source->most_clw_in_halfedge());
+        neighborHalfEdges.push_back(source->most_clw_out_halfedge());
         for (int i = 0; i < neighborHalfEdges.size(); ++i)
-            if (neighborHalfEdges[i] and neighborHalfEdges[i]->face()) {
+            if (neighborHalfEdges[i] && neighborHalfEdges[i]->face()) {
                 Edge *neighborEdge = neighborHalfEdges[i]->edge();
                 if (neighborEdge->PropertyStr().compare(FALSE_MARK) == 0) {
                     neighborEdge->PropertyStr() = TRUE_MARK;
