@@ -4,6 +4,7 @@
 * PAWS: tngu418
 */
 #include "Render.h"
+#include "PM.h"
 #include <fstream>
 #include <sstream>
 #include <queue>
@@ -34,6 +35,7 @@ std::vector<double> vertexesGaussian;
 bool pressedVertexNormalize = false;
 bool pressedGaussianCurvature = false;
 Mesh *pmesh;
+XMeshLib::PM *pCPM;
 
 void Render::display() {
     SetCamera();
@@ -56,6 +58,13 @@ void Render::handleKeypress(unsigned char key, int x, int y) {
         // k key.
         pressedGaussianCurvature = !pressedGaussianCurvature;
         display();
+    } else if (key == 117) {
+        std::cout << "Key UP" << std::endl;
+        pCPM->ProcessRefinement(100);
+        ComputeNormal();
+        display();
+    } else if (key == 100) {
+
     }
 }
 
@@ -71,9 +80,9 @@ void Render::reshape(int w, int h) {
     glutPostRedisplay();
 }
 
-void Render::begin(int argc, char **argv, Mesh *renderMesh) {
-
-    pmesh = renderMesh;
+void Render::begin(int argc, char **argv, XMeshLib::PM *cpm) {
+    pCPM = cpm;
+    pmesh = cpm->tMesh;
     ComputeBoundingBox();
     ComputeNormal();
 
@@ -362,8 +371,7 @@ void Render::ComputeNormal() {
 
             // Save the normal vector to a similar structure
             // for using glNormal later.
-            std::cout << normalVertexes.size() << " " << f->index()<< std::endl;
-            if (f->index() > normalVertexes.size()) {
+            if (f->index() >= normalVertexes.size()) {
                 normalVertexes.resize(f->index() * 2);
             }
             normalVertexes[f->index()] = fn;

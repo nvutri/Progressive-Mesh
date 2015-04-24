@@ -10,7 +10,7 @@
 #include "MeshLib_Core\Mesh.h"
 #include "MeshLib_Core\Iterators.h"
 #endif
-
+#include "PM.h"
 #include <iostream>
 
 typedef struct {
@@ -52,7 +52,7 @@ public:
 
     static void VertexNormalDisplay(Point pt);
 
-    static void begin(int argc, char **argv, Mesh *renderMesh);
+    static void begin(int argc, char **argv, XMeshLib::PM *cpm);
 
     static void display();
 

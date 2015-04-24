@@ -375,20 +375,22 @@ void PM::ProcessCoarsening(int targetVertSize) {
         // std::string fname = GenerateIndexedFileName("coarse", iterNum-iter-1, ".m");
         // SaveTemporaryMesh(fname.c_str());
     }
-    SaveMesh("baseMesh.m");
-    WriteVsplitRecord("vSplitRecord.txt", vsRecList);
+//    SaveMesh("baseMesh.m");
+//    WriteVsplitRecord("vSplitRecord.txt", vsRecList);
 }
 
-void PM::ProcessRefinement(int targetVertSize) {
-    for (int iter = 0; iter < targetVertSize - baseMeshResolution; ++iter) {
+void PM::ProcessRefinement(int targetDisplacement) {
+
+    for (int iter = 0; iter < targetDisplacement && !vsRecList.empty(); ++iter) {
         XMeshLib::VSplitRecord &vsRec = vsRecList.back();
         VertexSplit(vsRec);
         vsRecList.pop_back();
         // std::string fname = GenerateIndexedFileName("refine", iterNum-iter, ".m");
         // SaveTemporaryMesh(fname.c_str());
     }
-    std::string fname = GenerateIndexedFileName("refine", (targetVertSize), ".m");
-    SaveMesh(fname.c_str());
+    baseMeshResolution += targetDisplacement;
+//    std::string fname = GenerateIndexedFileName("refine", (targetVertSize), ".m");
+//    SaveMesh(fname.c_str());
 }
 
 

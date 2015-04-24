@@ -17,9 +17,8 @@ int main(int argc, char **argv) {
     if (argv[1]) {
         cmesh->readMFile(argv[1]);
         PM cpm(cmesh);
-        cpm.ProcessCoarsening(100);
-        cpm.ProcessRefinement(500);
-        Render::begin(argc, argv, cpm.tMesh);
+        cpm.ProcessCoarsening(atoi(argv[2]));
+        Render::begin(argc, argv, &cpm);
         delete cmesh;
     }
     return 0;
