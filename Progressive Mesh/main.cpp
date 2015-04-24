@@ -17,13 +17,10 @@ int main(int argc, char **argv) {
     if (argv[1]) {
         cmesh->readMFile(argv[1]);
         PM cpm(cmesh);
-        cpm.ProcessCoarsening(1000);
-        cpm.ProcessRefinement();
+        cpm.ProcessCoarsening(100);
+        cpm.ProcessRefinement(500);
+        Render::begin(argc, argv, cpm.tMesh);
         delete cmesh;
     }
-    Mesh *baseMesh = new Mesh;
-    baseMesh->readMFile("baseMesh.m");
-    std::cout << baseMesh->numVertices() << " " << baseMesh->numFaces() << std::endl;
-    Render::begin(argc, argv, baseMesh);
     return 0;
 }
