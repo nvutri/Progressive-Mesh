@@ -17,7 +17,9 @@ int main(int argc, char **argv) {
     if (argv[1]) {
         cmesh->readMFile(argv[1]);
         PM cpm(cmesh);
-        cpm.ProcessCoarsening(atoi(argv[2]));
+        int baseMeshResolution = atoi(argv[2]);
+        int displaceMentResolution = cpm.currentMeshResolution - baseMeshResolution;
+        cpm.ProcessCoarsening(displaceMentResolution);
         Render::begin(argc, argv, &cpm);
         delete cmesh;
     }

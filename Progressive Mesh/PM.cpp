@@ -363,8 +363,9 @@ Edge *PM::GetNextCollapseEdge() {
         return minE.first;
 }
 
-void PM::ProcessCoarsening(int targetVertSize) {
-    for (baseMeshResolution = tMesh->numVertices(); baseMeshResolution > targetVertSize; --baseMeshResolution) {
+void PM::ProcessCoarsening(int targetDisplacement) {
+    int targetVertSize = currentMeshResolution - targetDisplacement;
+    for (; currentMeshResolution > targetVertSize && currentMeshResolution > baseMeshResolution; --currentMeshResolution) {
         Edge *cE = GetNextCollapseEdge();
         if (!cE)
             break;
@@ -388,7 +389,7 @@ void PM::ProcessRefinement(int targetDisplacement) {
         // std::string fname = GenerateIndexedFileName("refine", iterNum-iter, ".m");
         // SaveTemporaryMesh(fname.c_str());
     }
-    baseMeshResolution += targetDisplacement;
+    currentMeshResolution += targetDisplacement;
 //    std::string fname = GenerateIndexedFileName("refine", (targetVertSize), ".m");
 //    SaveMesh(fname.c_str());
 }

@@ -22,6 +22,7 @@ namespace XMeshLib {
         PM(Mesh *cMesh) {
             tMesh = cMesh;
             tmpMesh = NULL;
+            currentMeshResolution = cMesh->numVertices();
         }
 
         ~PM() {
@@ -55,6 +56,7 @@ namespace XMeshLib {
         Mesh *tMesh;
         Mesh *tmpMesh;
         int baseMeshResolution;
+        int currentMeshResolution;
         std::vector <VSplitRecord> vsRecList;
         std::vector<int> tmpInd2OInd;
         // std::vector<int> oInd2TmpInd;

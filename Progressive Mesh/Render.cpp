@@ -59,12 +59,13 @@ void Render::handleKeypress(unsigned char key, int x, int y) {
         pressedGaussianCurvature = !pressedGaussianCurvature;
         display();
     } else if (key == 117) {
-        std::cout << "Key UP" << std::endl;
         pCPM->ProcessRefinement(100);
         ComputeNormal();
         display();
     } else if (key == 100) {
-
+        pCPM->ProcessCoarsening(100);
+        ComputeNormal();
+        display();
     }
 }
 
