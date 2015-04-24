@@ -348,8 +348,8 @@ void Render::MyInit() {
 Computer normal for all faces.
 */
 void Render::ComputeNormal() {
-    normalVertexes.resize((unsigned long) pmesh->numFaces());
-    vertexesGaussian.resize((unsigned long) pmesh->numVertices());
+    normalVertexes.resize((unsigned long) pmesh->numFaces() * 2);
+    vertexesGaussian.resize((unsigned long) pmesh->numVertices() * 2);
     for (MeshFaceIterator fit(pmesh); !fit.end(); ++fit) {
         Face *f = *fit;
         if (f) {
@@ -362,6 +362,10 @@ void Render::ComputeNormal() {
 
             // Save the normal vector to a similar structure
             // for using glNormal later.
+            std::cout << normalVertexes.size() << " " << f->index()<< std::endl;
+            if (f->index() > normalVertexes.size()) {
+                normalVertexes.resize(f->index() * 2);
+            }
             normalVertexes[f->index()] = fn;
         }
     }
