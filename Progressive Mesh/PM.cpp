@@ -75,7 +75,7 @@ Vertex *PM::EdgeCollapse(Edge *e, VSplitRecord &vsRec) {
     for (unsigned int i = 0; i < tmpHe.size(); ++i)
         tmpHe[i]->target() = vs;
 
-    //(2) set the new tiwns halfedges of dhe2 and dhe3 to dhe4 and dhe5, respectively
+    //(2) set the new twin halfedges of dhe2 and dhe3 to dhe4 and dhe5, respectively
     Edge *e1 = dhe2->edge();
     Edge *e2 = dhe3->edge();
     Edge *de1 = dhe4->edge();
@@ -117,9 +117,9 @@ void PM::VertexSplit(VSplitRecord &vsRec) {
 
     //(0) Obtain prestored primitives from vsplitRecord, and undeleted primitives from halfedge data structure
     Vertex *vt = vsRec.vt;
-    Vertex *vs = vsRec.vs;    //tMesh->indVertex(vsRec.vs_ind);
-    Vertex *vl = vsRec.vl;    //tMesh->indVertex(vsRec.vl_ind);
-    Vertex *vr = vsRec.vr;    //tMesh->indVertex(vsRec.vr_ind);
+    Vertex *vs = vsRec.vs;    // tMesh->indVertex(vsRec.vs_ind);
+    Vertex *vl = vsRec.vl;    // tMesh->indVertex(vsRec.vl_ind);
+    Vertex *vr = vsRec.vr;    // tMesh->indVertex(vsRec.vr_ind);
     Halfedge *dhe4 = tMesh->vertexHalfedge(vs, vl);
     Halfedge *dhe3 = tMesh->vertexHalfedge(vs, vr);
     Halfedge *dhe2 = dhe4->twin();
@@ -380,23 +380,14 @@ void PM::ProcessCoarsening(int targetVertSize) {
 }
 
 void PM::ProcessRefinement(int targetVertSize) {
-    unsigned int iterNum;
-    if (targetVertSize == -1)
-        iterNum = vsRecList.size();
-    else {
-        iterNum = targetVertSize - baseMeshResolution;
-        if (iterNum > vsRecList.size())
-            iterNum = vsRecList.size();
-    }
-    std::cout << "Iter Number: " << iterNum << std::endl;
-    for (int iter = iterNum - 1; iter >= 0; --iter) {
-        XMeshLib::VSplitRecord &vsRec = vsRecList[iter];
+    for (int iter = 0; iter < targetVertSize - baseMeshResolution; ++iter) {
+        XMeshLib::VSplitRecord &vsRec = vsRecList.back();
         VertexSplit(vsRec);
+        vsRecList.pop_back();
         // std::string fname = GenerateIndexedFileName("refine", iterNum-iter, ".m");
         // SaveTemporaryMesh(fname.c_str());
-        vsRecList.pop_back();
     }
-    std::string fname = GenerateIndexedFileName("refine", (baseMeshResolution + iterNum), ".m");
+    std::string fname = GenerateIndexedFileName("refine", (targetVertSize), ".m");
     SaveMesh(fname.c_str());
 }
 
