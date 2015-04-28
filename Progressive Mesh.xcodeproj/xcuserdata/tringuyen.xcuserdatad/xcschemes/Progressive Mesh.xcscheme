@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Scheme
+   version = "1.3">
+   <BuildAction>
+      <BuildActionEntries>
+         <BuildActionEntry
+            buildForRunning = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "E54E23C4D6DD6EBE1DFBAA99"
+               BuildableName = "Progressive Mesh"
+               BlueprintName = "Progressive Mesh"
+               ReferencedContainer = "container:Progressive Mesh.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+      </BuildActionEntries>
+   </BuildAction>
+   <LaunchAction
+      useCustomWorkingDirectory = "YES"
+      buildConfiguration = "Debug"
+      customWorkingDirectory = "/Users/tringuyen/Documents/workspace/Progressive_Mesh/Progressive Mesh">
+      <BuildableProductRunnable>
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "E54E23C4D6DD6EBE1DFBAA99"
+            BuildableName = "Progressive Mesh"
+            BlueprintName = "Progressive Mesh"
+            ReferencedContainer = "container:Progressive Mesh.xcodeproj">
+         </BuildableReference>
+      </BuildableProductRunnable>
+      <CommandLineArguments>
+         <CommandLineArgument
+            argument = "stat.m"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "10000"
+            isEnabled = "YES">
+         </CommandLineArgument>
+      </CommandLineArguments>
+   </LaunchAction>
+</Scheme>
