@@ -19,6 +19,7 @@ int main(int argc, char **argv) {
         PM cpm(cmesh);
         int baseMeshResolution = atoi(argv[2]);
         int displaceMentResolution = cpm.currentMeshResolution - baseMeshResolution;
+        std::cout << displaceMentResolution << std::endl;
         cpm.ProcessCoarsening(displaceMentResolution);
         Render::begin(argc, argv, &cpm);
         delete cmesh;

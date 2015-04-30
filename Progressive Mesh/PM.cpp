@@ -13,7 +13,7 @@
 
 #include "XLibCommon.h"
 
-#define NUM_THREADS 1
+#define NUM_THREADS 10
 
 using namespace XMeshLib;
 
@@ -109,8 +109,8 @@ Vertex *PM::EdgeCollapse(Edge *e, VSplitRecord &vsRec) {
     DeleteEdge(e);
     DeleteEdge(de1);
     DeleteEdge(de2);
-    for (int i = 0; i < 6; ++i)
-        delete phe[i];
+//    for (int i = 0; i < 6; ++i)
+//        delete phe[i];
 
     return NULL;
 }
@@ -247,8 +247,9 @@ void PM::DeleteFace(Face *f) {
         return;
     }
     assert(fPos != fList.end());
-    fList.erase(fPos);
-    delete f;
+    *fPos = NULL;
+//    fList.erase(fPos);
+//    delete f;
 }
 
 void PM::DeleteVertex(Vertex *v) {
@@ -266,8 +267,9 @@ void PM::DeleteEdge(Edge *e) {
         return;
     }
     assert(ePos != eList.end());
-    eList.erase(ePos);
-    delete e;
+    *ePos = NULL;
+//    eList.erase(ePos);
+//    delete e;
 }
 
 void PM::printE(Edge *e) {
@@ -387,29 +389,31 @@ struct thread_data {
 void PM::GetNextCollapseEdges(int numEdges) {
     collapseEdges.clear();
     double LIMIT = 1e10;
-    for (MeshFaceIterator eit(tMesh); !eit.end(); ++eit) {
-        Face *face = *eit;
-        Edge *e = face->he()->edge();
-        double clen;
-        if (e->he(0)) {
-            Point &p0 = e->he(0)->source()->point();
-            Point &p1 = e->he(0)->target()->point();
-            clen = (p0 - p1).norm();
-        } else {
-            Point &p0 = e->he(1)->target()->point();
-            Point &p1 = e->he(1)->source()->point();
-            clen = (p0 - p1).norm();
-        }
-        if (clen < LIMIT) {
-            bool canCollapse = CheckEdgeCollapseCondition(e);
-            if (canCollapse) {
-                collapseEdges.push_back(e);
-                if (collapseEdges.size() == numEdges) {
-                    return;
+    std::vector<Face *> chosenFaces;
+    for (MeshEdgeIterator eit(tMesh); !eit.end(); ++eit) {
+        Edge *e = *eit;
+        if (e && tMesh->m_faces[e->he(0)->face()->index()]) {
+            double clen;
+            if (e->he(0) && e->he(1)) {
+                Point &p0 = e->he(0)->target()->point();
+                Point &p1 = e->he(1)->target()->point();
+                clen = (p0 - p1).norm();
+                if (clen < LIMIT) {
+                    bool canCollapse = CheckEdgeCollapseCondition(e);
+                    std::vector<Face *>::iterator fPos = std::find(chosenFaces.begin(), chosenFaces.end(), e->he(0)->face());
+                    if (canCollapse && fPos == chosenFaces.end()) {
+                        collapseEdges.push_back(e);
+                        chosenFaces.push_back(e->he(0)->face());
+                        std::cout << collapseEdges.size() << " " << e->index() << std::endl;
+                        if (collapseEdges.size() == numEdges) {
+                            std::cout << "Got edges" << std::endl;
+                            return;
+                        }
+                    }
                 }
-            } else {
-//                std::cout << "Same face" << std::endl;
             }
+        } else if (collapseEdges.size() > 0) {
+            return;
         }
     }
 }
@@ -434,20 +438,20 @@ void PM::ProcessCoarsening(int targetDisplacement) {
         td[i].thread_id = i;
         td[i].pm_ptr = this;
     }
-    for (; currentMeshResolution > targetVertSize;
-           currentMeshResolution-= NUM_THREADS) {
+    for (; currentMeshResolution > targetVertSize;) {
         GetNextCollapseEdges(NUM_THREADS);
-        for (int i = 0; i < NUM_THREADS; i++) {
-//            std::cout << "Thread" << i << std::endl;
+        for (int i = 0; i < collapseEdges.size(); i++) {
+            std::cout << "Thread" << i << std::endl;
             int rc = pthread_create(&threads[i], NULL, &PM::FindAndCollapseEdge, (void *) &td[i]);
             if (rc) {
                 std::cout << "Error:unable to create thread," << rc << std::endl;
                 exit(-1);
             }
         }
-        for (int i = 0; i < NUM_THREADS; i++) {
+        for (int i = 0; i < collapseEdges.size(); i++) {
             int rc = pthread_join(threads[i], NULL);
         }
+        currentMeshResolution -= collapseEdges.size();
     }
 }
 
