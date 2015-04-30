@@ -87,8 +87,8 @@ void Render::begin(int argc, char **argv, XMeshLib::PM *cpm) {
     ComputeBoundingBox();
     ComputeNormal();
 
-    CalculateComponents();
-    CalculateBoundaries();
+//    CalculateComponents();
+//    CalculateBoundaries();
 
     // OpenGL Routines.
     glutInit(&argc, argv);

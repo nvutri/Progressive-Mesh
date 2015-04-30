@@ -13,8 +13,11 @@
 #include "MeshLib_Core\Mesh.h"
 #include "MeshLib_Core\Iterators.h"
 #endif
+
 #include "VSplitRecord.h"
 #include <iostream>
+#include <stdlib.h>
+#include <pthread.h>
 
 namespace XMeshLib {
     class PM { //Currently implemented for closed meshes only
@@ -25,16 +28,20 @@ namespace XMeshLib {
             currentMeshResolution = cMesh->numVertices();
         }
 
-        ~PM() {
-            if (tmpMesh)
-                delete tmpMesh;
-        }
+//        ~PM() {
+//            if (tmpMesh)
+//                delete tmpMesh;
+//        }
 
         void SetEdgePriority();
 
         void ProcessCoarsening(int targetVertSize = 4);
 
         void ProcessRefinement(int targetVertSize = -1); // by default, refine back to full resolution
+
+        static void *FindAndCollapseEdge(void *);
+
+        void GetNextCollapseEdges(int numEdges);
 
         Edge *GetNextCollapseEdge();
 
@@ -43,7 +50,7 @@ namespace XMeshLib {
         Vertex *EdgeCollapse(Edge *e, VSplitRecord &vsRec); //Currently for closed surfaces only
         void VertexSplit(VSplitRecord &vsRec);
 
-        bool WriteVsplitRecord(const char filename[], std::vector <VSplitRecord> &vsRecList);
+        bool WriteVsplitRecord(const char filename[], std::vector<VSplitRecord> &vsRecList);
 
         bool SaveMesh(const char filename[]);
 
@@ -57,10 +64,10 @@ namespace XMeshLib {
         Mesh *tmpMesh;
         int baseMeshResolution;
         int currentMeshResolution;
-        std::vector <VSplitRecord> vsRecList;
+        std::vector<VSplitRecord> vsRecList;
         std::vector<int> tmpInd2OInd;
         // std::vector<int> oInd2TmpInd;
-
+        pthread_mutex_t mutexLock;
     protected:
         Vertex *CreateVertex();
 
