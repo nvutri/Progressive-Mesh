@@ -13,7 +13,7 @@
 
 #include "XLibCommon.h"
 
-#define NUM_THREADS 10
+#define NUM_THREADS 100
 
 using namespace XMeshLib;
 
@@ -171,12 +171,6 @@ void PM::VertexSplit(VSplitRecord &vsRec) {
     e_sl->he(1) = phe[2];
     e_sr->he(0) = dhe3;
     e_sr->he(1) = phe[3];
-    //e_tl->he(0) = dhe4;
-    //e_tl->he(1) = phe[4];
-    //e_tr->he(0) = dhe5;
-    //e_tr->he(1) = phe[5];
-    //e_st->he(0) = phe[0];
-    //e_st->he(1) = phe[1];
     phe[2]->edge() = e_sl;
     phe[3]->edge() = e_sr;
     phe[0]->edge() = e_st;
@@ -389,31 +383,45 @@ struct thread_data {
 void PM::GetNextCollapseEdges(int numEdges) {
     collapseEdges.clear();
     double LIMIT = 1e10;
-    std::vector<Face *> chosenFaces;
+    std::vector<Edge *> chosenEdges;
     for (MeshEdgeIterator eit(tMesh); !eit.end(); ++eit) {
         Edge *e = *eit;
-        if (e && tMesh->m_faces[e->he(0)->face()->index()]) {
-            double clen;
-            if (e->he(0) && e->he(1)) {
+        if (e) {
+            std::vector<Edge *>::iterator ePos = std::find(chosenEdges.begin(), chosenEdges.end(), e);
+            if (tMesh->indEdge(e->index()) && ePos == chosenEdges.end()) {
+                double clen;
                 Point &p0 = e->he(0)->target()->point();
                 Point &p1 = e->he(1)->target()->point();
                 clen = (p0 - p1).norm();
                 if (clen < LIMIT) {
                     bool canCollapse = CheckEdgeCollapseCondition(e);
-                    std::vector<Face *>::iterator fPos = std::find(chosenFaces.begin(), chosenFaces.end(), e->he(0)->face());
-                    if (canCollapse && fPos == chosenFaces.end()) {
+                    if (canCollapse) {
                         collapseEdges.push_back(e);
-                        chosenFaces.push_back(e->he(0)->face());
+                        chosenEdges.push_back(e);
+                        Halfedge *phe[6];
+                        phe[0] = e->he(0);
+                        phe[1] = e->he(1);
+                        phe[2] = phe[0]->next();
+                        phe[4] = phe[0]->prev();
+                        phe[3] = phe[1]->prev();
+                        phe[5] = phe[1]->next();
+                        std::vector<Vertex *> chosenVertices;
+                        chosenVertices.push_back(phe[0]->target());
+                        chosenVertices.push_back(phe[1]->target());
+                        chosenVertices.push_back(phe[2]->target());
+                        chosenVertices.push_back(phe[5]->target());
+                        for (int vIndex = 0; vIndex < chosenVertices.size(); ++vIndex) {
+                            for (VertexEdgeIterator edgeIt(chosenVertices.at(vIndex)); !edgeIt.end(); ++edgeIt) {
+                                chosenEdges.push_back(*edgeIt);
+                            }
+                        }
                         std::cout << collapseEdges.size() << " " << e->index() << std::endl;
                         if (collapseEdges.size() == numEdges) {
-                            std::cout << "Got edges" << std::endl;
                             return;
                         }
                     }
                 }
             }
-        } else if (collapseEdges.size() > 0) {
-            return;
         }
     }
 }
@@ -425,7 +433,7 @@ void *PM::FindAndCollapseEdge(void *threadarg) {
         return NULL;
     XMeshLib::VSplitRecord vsRec;
     my_data->pm_ptr->EdgeCollapse(cE, vsRec);
-    my_data->pm_ptr->vsRecList.push_back(vsRec);
+//    my_data->pm_ptr->vsRecList.push_back(vsRec);
     return NULL;
 }
 
