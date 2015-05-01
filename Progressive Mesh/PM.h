@@ -18,7 +18,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <pthread.h>
-
+#include <string>
 namespace XMeshLib {
     class PM { //Currently implemented for closed meshes only
     public:
@@ -41,9 +41,8 @@ namespace XMeshLib {
 
         static void *FindAndCollapseEdge(void *);
 
-        void GetNextCollapseEdges(int numEdges);
 
-        Edge *GetNextCollapseEdge();
+        Edge *GetNextCollapseEdge(int left, int right);
 
         bool CheckEdgeCollapseCondition(Edge *e);
 
@@ -67,7 +66,6 @@ namespace XMeshLib {
         std::vector<VSplitRecord> vsRecList;
         std::vector<int> tmpInd2OInd;
         // std::vector<int> oInd2TmpInd;
-        pthread_mutex_t mutexLock;
     protected:
         Vertex *CreateVertex();
 

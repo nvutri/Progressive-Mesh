@@ -13,9 +13,19 @@
 
 #include "XLibCommon.h"
 
-#define NUM_THREADS 10
+#define NUM_THREADS 2
 
 using namespace XMeshLib;
+const std::string TRUE_MARK("1");
+
+std::vector<Edge *> collapseEdges;
+struct thread_data {
+    int thread_id;
+    int numCollapse;
+    PM *pm_ptr;
+};
+pthread_mutex_t mutexLock;
+
 
 void PM::SetEdgePriority() {
 
@@ -50,17 +60,23 @@ Vertex *PM::EdgeCollapse(Edge *e, VSplitRecord &vsRec) {
     Halfedge *phe[6];
     phe[0] = e->he(0);
     phe[1] = e->he(1);
-    assert(phe[1]);
     Face *f1 = phe[0]->face();
     Face *f2 = phe[1]->face();
+    if (!f1 || !f2) {
+        return NULL;
+    }
     phe[2] = phe[0]->next();
     phe[4] = phe[0]->prev();
     phe[3] = phe[1]->prev();
     phe[5] = phe[1]->next();
-    Halfedge *dhe2 = phe[2]->twin() ? phe[2]->twin() : phe[2];
-    Halfedge *dhe3 = phe[3]->twin() ? phe[3]->twin() : phe[3];
-    Halfedge *dhe4 = phe[4]->twin() ? phe[4]->twin() : phe[4];
-    Halfedge *dhe5 = phe[5]->twin() ? phe[5]->twin() : phe[5];
+    for (int i = 0; i < 6; ++i)
+        if (!phe[i] || !phe[i]->twin() || !phe[i]->target()) {
+            return NULL;
+        }
+    Halfedge *dhe2 = phe[2]->twin();
+    Halfedge *dhe3 = phe[3]->twin();
+    Halfedge *dhe4 = phe[4]->twin();
+    Halfedge *dhe5 = phe[5]->twin();
     Vertex *vs = phe[0]->target();
     Vertex *vt = phe[1]->target();
     Vertex *vl = phe[2]->target();
@@ -82,6 +98,9 @@ Vertex *PM::EdgeCollapse(Edge *e, VSplitRecord &vsRec) {
     Edge *e2 = dhe3->edge();
     Edge *de1 = dhe4->edge();
     Edge *de2 = dhe5->edge();
+    if (!e1 || !e2 || !de1 || !de2) {
+        return NULL;
+    }
     e1->he(0) = dhe2;
     e1->he(1) = dhe4;
     dhe4->edge() = e1;
@@ -109,8 +128,7 @@ Vertex *PM::EdgeCollapse(Edge *e, VSplitRecord &vsRec) {
     DeleteEdge(e);
     DeleteEdge(de1);
     DeleteEdge(de2);
-//    for (int i = 0; i < 6; ++i)
-//        delete phe[i];
+
 
     return NULL;
 }
@@ -171,12 +189,6 @@ void PM::VertexSplit(VSplitRecord &vsRec) {
     e_sl->he(1) = phe[2];
     e_sr->he(0) = dhe3;
     e_sr->he(1) = phe[3];
-    //e_tl->he(0) = dhe4;
-    //e_tl->he(1) = phe[4];
-    //e_tr->he(0) = dhe5;
-    //e_tr->he(1) = phe[5];
-    //e_st->he(0) = phe[0];
-    //e_st->he(1) = phe[1];
     phe[2]->edge() = e_sl;
     phe[3]->edge() = e_sr;
     phe[0]->edge() = e_st;
@@ -268,6 +280,7 @@ void PM::DeleteEdge(Edge *e) {
     }
     assert(ePos != eList.end());
     *ePos = NULL;
+//    e->PropertyStr() = TRUE_MARK;
 //    eList.erase(ePos);
 //    delete e;
 }
@@ -350,27 +363,43 @@ bool PM::SaveMesh(const char filename[]) {
     return true;
 }
 
-Edge *PM::GetNextCollapseEdge() {
+
+Edge *PM::GetNextCollapseEdge(int left, int right) {
     std::pair<Edge *, double> minE;
     minE.first = NULL;
     minE.second = 1e10;
-    for (MeshEdgeIterator eit(tMesh); !eit.end(); ++eit) {
-        Edge *e = *eit;
-        double clen = minE.second;
-        if (e->he(0)) {
-            Point &p0 = e->he(0)->source()->point();
-            Point &p1 = e->he(0)->target()->point();
-            clen = (p0 - p1).norm();
-        } else {
-            Point &p0 = e->he(1)->target()->point();
-            Point &p1 = e->he(1)->source()->point();
-            clen = (p0 - p1).norm();
-        }
-        if (clen < minE.second) {
-            bool canCollapse = CheckEdgeCollapseCondition(e);
-            if (canCollapse) {
-                minE.second = clen;
-                minE.first = e;
+    double clen = minE.second;
+    for (int index = left; index < right; ++index) {
+        Edge *e = tMesh->indEdge(index);
+        if (e && (e->he(0) && e->he(1))) {
+            bool faceTest = true;
+            for (FaceEdgeIterator eit(e->he(0)->face()); !eit.end(); ++eit) {
+                Edge *aroundE = *eit;
+                int edgeIndex = aroundE->index();
+                faceTest = faceTest && tMesh->indEdge(edgeIndex) != NULL;
+                faceTest = faceTest && (edgeIndex >= left) && (edgeIndex < right);
+            }
+            for (FaceEdgeIterator eit(e->he(1)->face()); !eit.end(); ++eit) {
+                Edge *aroundE = *eit;
+                int edgeIndex = aroundE->index();
+                faceTest = faceTest && tMesh->indEdge(edgeIndex) != NULL;
+                faceTest = faceTest && (edgeIndex >= left) && (edgeIndex < right);
+            }
+
+            if (faceTest) {
+                Point &p0 = e->he(0)->target()->point();
+                Point &p1 = e->he(1)->target()->point();
+                clen = (p0 - p1).norm();
+
+                if (clen < minE.second) {
+                    pthread_mutex_lock(&mutexLock);
+                    bool canCollapse = CheckEdgeCollapseCondition(e);
+                    pthread_mutex_unlock(&mutexLock);
+                    if (canCollapse) {
+                        minE.second = clen;
+                        minE.first = e;
+                    }
+                }
             }
         }
     }
@@ -380,79 +409,48 @@ Edge *PM::GetNextCollapseEdge() {
         return minE.first;
 }
 
-std::vector<Edge *> collapseEdges;
-struct thread_data {
-    int thread_id;
-    PM *pm_ptr;
-};
-
-void PM::GetNextCollapseEdges(int numEdges) {
-    collapseEdges.clear();
-    double LIMIT = 1e10;
-    std::vector<Face *> chosenFaces;
-    for (MeshEdgeIterator eit(tMesh); !eit.end(); ++eit) {
-        Edge *e = *eit;
-        if (e && tMesh->m_faces[e->he(0)->face()->index()]) {
-            double clen;
-            if (e->he(0) && e->he(1)) {
-                Point &p0 = e->he(0)->target()->point();
-                Point &p1 = e->he(1)->target()->point();
-                clen = (p0 - p1).norm();
-                if (clen < LIMIT) {
-                    bool canCollapse = CheckEdgeCollapseCondition(e);
-                    std::vector<Face *>::iterator fPos = std::find(chosenFaces.begin(), chosenFaces.end(), e->he(0)->face());
-                    if (canCollapse && fPos == chosenFaces.end()) {
-                        collapseEdges.push_back(e);
-                        chosenFaces.push_back(e->he(0)->face());
-                        std::cout << collapseEdges.size() << " " << e->index() << std::endl;
-                        if (collapseEdges.size() == numEdges) {
-                            std::cout << "Got edges" << std::endl;
-                            return;
-                        }
-                    }
-                }
-            }
-        } else if (collapseEdges.size() > 0) {
-            return;
-        }
-    }
-}
-
 void *PM::FindAndCollapseEdge(void *threadarg) {
     struct thread_data *my_data = (struct thread_data *) threadarg;
-    Edge *cE = collapseEdges[my_data->thread_id];
-    if (!cE)
-        return NULL;
-    XMeshLib::VSplitRecord vsRec;
-    my_data->pm_ptr->EdgeCollapse(cE, vsRec);
-    my_data->pm_ptr->vsRecList.push_back(vsRec);
+    int numCollapse = my_data->numCollapse;
+    int numEdge = my_data->pm_ptr->tMesh->numEdges();
+    int thread_id = my_data->thread_id;
+    for (int i = 0; i < numCollapse; ++i) {
+        Edge *cE = my_data->pm_ptr->GetNextCollapseEdge(
+                thread_id * numEdge / NUM_THREADS,
+                (thread_id + 1) * numEdge / NUM_THREADS);
+        if (cE) {
+            std::cout << thread_id << "] " << cE->index() << std::endl;
+            XMeshLib::VSplitRecord vsRec;
+            pthread_mutex_lock(&mutexLock);
+            my_data->pm_ptr->EdgeCollapse(cE, vsRec);
+            my_data->pm_ptr->vsRecList.push_back(vsRec);
+            pthread_mutex_unlock(&mutexLock);
+        }
+    }
+
     return NULL;
 }
 
 void PM::ProcessCoarsening(int targetDisplacement) {
     pthread_t threads[NUM_THREADS];
     struct thread_data td[NUM_THREADS];
-
-    int targetVertSize = currentMeshResolution - targetDisplacement;
     for (int i = 0; i < NUM_THREADS; ++i) {
         td[i].thread_id = i;
         td[i].pm_ptr = this;
+        td[i].numCollapse = targetDisplacement / NUM_THREADS;
     }
-    for (; currentMeshResolution > targetVertSize;) {
-        GetNextCollapseEdges(NUM_THREADS);
-        for (int i = 0; i < collapseEdges.size(); i++) {
-            std::cout << "Thread" << i << std::endl;
-            int rc = pthread_create(&threads[i], NULL, &PM::FindAndCollapseEdge, (void *) &td[i]);
-            if (rc) {
-                std::cout << "Error:unable to create thread," << rc << std::endl;
-                exit(-1);
-            }
+    for (int i = 0; i < NUM_THREADS; i++) {
+        std::cout << "Thread" << i << std::endl;
+        int rc = pthread_create(&threads[i], NULL, &PM::FindAndCollapseEdge, (void *) &td[i]);
+        if (rc) {
+            std::cout << "Error:unable to create thread," << rc << std::endl;
+            exit(-1);
         }
-        for (int i = 0; i < collapseEdges.size(); i++) {
-            int rc = pthread_join(threads[i], NULL);
-        }
-        currentMeshResolution -= collapseEdges.size();
     }
+    for (int i = 0; i < NUM_THREADS; i++) {
+        int rc = pthread_join(threads[i], NULL);
+    }
+    currentMeshResolution -= targetDisplacement;
 }
 
 void PM::ProcessRefinement(int targetDisplacement) {
