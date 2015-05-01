@@ -28,6 +28,9 @@ namespace XMeshLib {
         Vertex *vl;
         Vertex *vr;
         Vertex *vt;
+        int face1, face2;
+        int eIndex, de1Index, de2Index;
+        int *edgeIndexes[3];
         Point old_vs_pt;
 
         Point &old_vt_pt() {

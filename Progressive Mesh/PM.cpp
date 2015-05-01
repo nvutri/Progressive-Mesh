@@ -13,7 +13,9 @@
 
 #include "XLibCommon.h"
 
-#define NUM_THREADS 100
+#define NUM_THREADS 128
+
+pthread_mutex_t mutexLock;
 
 using namespace XMeshLib;
 
@@ -53,14 +55,16 @@ Vertex *PM::EdgeCollapse(Edge *e, VSplitRecord &vsRec) {
     assert(phe[1]);
     Face *f1 = phe[0]->face();
     Face *f2 = phe[1]->face();
+    vsRec.face1 = f1->index();
+    vsRec.face2 = f2->index();
     phe[2] = phe[0]->next();
     phe[4] = phe[0]->prev();
     phe[3] = phe[1]->prev();
     phe[5] = phe[1]->next();
-    Halfedge *dhe2 = phe[2]->twin() ? phe[2]->twin() : phe[2];
-    Halfedge *dhe3 = phe[3]->twin() ? phe[3]->twin() : phe[3];
-    Halfedge *dhe4 = phe[4]->twin() ? phe[4]->twin() : phe[4];
-    Halfedge *dhe5 = phe[5]->twin() ? phe[5]->twin() : phe[5];
+    Halfedge *dhe2 = phe[2]->twin();
+    Halfedge *dhe3 = phe[3]->twin();
+    Halfedge *dhe4 = phe[4]->twin();
+    Halfedge *dhe5 = phe[5]->twin();
     Vertex *vs = phe[0]->target();
     Vertex *vt = phe[1]->target();
     Vertex *vl = phe[2]->target();
@@ -106,6 +110,9 @@ Vertex *PM::EdgeCollapse(Edge *e, VSplitRecord &vsRec) {
     vs->point() = (vs->point() + vt->point()) / 2;
     // Equal effect as DeleteVertex(vt);
     tMesh->m_verts[vt->index()] = NULL;
+    vsRec.eIndex = e->index();
+    vsRec.de1Index = de1->index();
+    vsRec.de2Index = de2->index();
     DeleteEdge(e);
     DeleteEdge(de1);
     DeleteEdge(de2);
@@ -115,7 +122,7 @@ Vertex *PM::EdgeCollapse(Edge *e, VSplitRecord &vsRec) {
     return NULL;
 }
 
-void PM::VertexSplit(VSplitRecord &vsRec) {
+int PM::VertexSplit(VSplitRecord &vsRec) {
 
     //(0) Obtain prestored primitives from vsplitRecord, and undeleted primitives from halfedge data structure
     Vertex *vt = vsRec.vt;
@@ -124,6 +131,9 @@ void PM::VertexSplit(VSplitRecord &vsRec) {
     Vertex *vr = vsRec.vr;    // tMesh->indVertex(vsRec.vr_ind);
     Halfedge *dhe4 = tMesh->vertexHalfedge(vs, vl);
     Halfedge *dhe3 = tMesh->vertexHalfedge(vs, vr);
+    if (!dhe3 || !dhe4) {
+        return -1;
+    }
     Halfedge *dhe2 = dhe4->twin();
     Halfedge *dhe5 = dhe3->twin();
     vs->point() = vsRec.old_vs_pt;
@@ -137,11 +147,11 @@ void PM::VertexSplit(VSplitRecord &vsRec) {
     }
     Edge *e_sl = dhe2->edge();
     Edge *e_sr = dhe3->edge();
-    Edge *e_tl = CreateEdge(dhe4, phe[4]);
-    Edge *e_tr = CreateEdge(dhe5, phe[5]);
-    Edge *e_st = CreateEdge(phe[0], phe[1]);
-    Face *f0 = CreateFace();
-    Face *f1 = CreateFace();
+    Edge *e_tl = CreateEdge(vsRec.eIndex, dhe4, phe[4]);
+    Edge *e_tr = CreateEdge(vsRec.de1Index, dhe5, phe[5]);
+    Edge *e_st = CreateEdge(vsRec.de2Index, phe[0], phe[1]);
+    Face *f0 = CreateFace(vsRec.face1);
+    Face *f1 = CreateFace(vsRec.face2);
 
     //(2) Collect following ccw order, about vt, all in halfedges from dhe4->prev() to dhe5. These he's target should be linked to vt
     Halfedge *che = dhe4->prev();
@@ -198,17 +208,18 @@ void PM::VertexSplit(VSplitRecord &vsRec) {
     phe[1]->face() = phe[3]->face() = phe[5]->face() = f1;
     f0->he() = phe[0];
     f1->he() = phe[1];
+    return 0;
 }
 
 
-Face *PM::CreateFace() {
+Face *PM::CreateFace(int faceIndex) {
     Face *f = new Face();
     int fNum = tMesh->m_faces.size();
     if (!fNum)
         f->index() = 0;
     else
-        f->index() = tMesh->m_faces[fNum - 1]->index() + 1;
-    tMesh->m_faces.push_back(f);
+        f->index() = faceIndex;
+    tMesh->m_faces[faceIndex] = f;
     return f;
 }
 
@@ -223,14 +234,14 @@ Vertex *PM::CreateVertex() {
     return v;
 }
 
-Edge *PM::CreateEdge(Halfedge *he0, Halfedge *he1) {
+Edge *PM::CreateEdge(int edgeIndex, Halfedge *he0, Halfedge *he1) {
     Edge *e = new Edge(he0, he1);
     int eNum = tMesh->m_edges.size();
     if (!eNum)
         e->index() = 0;
     else
-        e->index() = tMesh->m_edges[eNum - 1]->index() + 1;
-    tMesh->m_edges.push_back(e);
+        e->index() = edgeIndex;
+    tMesh->m_edges[edgeIndex] = e;
     return e;
 }
 
@@ -378,16 +389,18 @@ std::vector<Edge *> collapseEdges;
 struct thread_data {
     int thread_id;
     PM *pm_ptr;
+    XMeshLib::VSplitRecord vsRec;
 };
 
+int startEdge = 0;
 void PM::GetNextCollapseEdges(int numEdges) {
     collapseEdges.clear();
     double LIMIT = 1e10;
-    std::vector<Edge *> chosenEdges;
-    for (MeshEdgeIterator eit(tMesh); !eit.end(); ++eit) {
-        Edge *e = *eit;
+    std::set<Edge *> chosenEdges;
+    for (; startEdge < tMesh->numEdges(); ++startEdge) {
+        Edge *e = tMesh->indEdge(startEdge);
         if (e) {
-            std::vector<Edge *>::iterator ePos = std::find(chosenEdges.begin(), chosenEdges.end(), e);
+            std::set<Edge *>::iterator ePos = std::find(chosenEdges.begin(), chosenEdges.end(), e);
             if (tMesh->indEdge(e->index()) && ePos == chosenEdges.end()) {
                 double clen;
                 Point &p0 = e->he(0)->target()->point();
@@ -397,7 +410,7 @@ void PM::GetNextCollapseEdges(int numEdges) {
                     bool canCollapse = CheckEdgeCollapseCondition(e);
                     if (canCollapse) {
                         collapseEdges.push_back(e);
-                        chosenEdges.push_back(e);
+                        chosenEdges.insert(e);
                         Halfedge *phe[6];
                         phe[0] = e->he(0);
                         phe[1] = e->he(1);
@@ -411,11 +424,13 @@ void PM::GetNextCollapseEdges(int numEdges) {
                         chosenVertices.push_back(phe[2]->target());
                         chosenVertices.push_back(phe[5]->target());
                         for (int vIndex = 0; vIndex < chosenVertices.size(); ++vIndex) {
-                            for (VertexEdgeIterator edgeIt(chosenVertices.at(vIndex)); !edgeIt.end(); ++edgeIt) {
-                                chosenEdges.push_back(*edgeIt);
+                            for (VertexFaceIterator faceIt(chosenVertices.at(vIndex)); !faceIt.end(); ++faceIt) {
+                                for (FaceEdgeIterator edgeIt(*faceIt); !edgeIt.end(); ++edgeIt) {
+                                    chosenEdges.insert(*edgeIt);
+                                }
                             }
                         }
-                        std::cout << collapseEdges.size() << " " << e->index() << std::endl;
+//                        std::cout << collapseEdges.size() << " " << e->index() << std::endl;
                         if (collapseEdges.size() == numEdges) {
                             return;
                         }
@@ -424,6 +439,7 @@ void PM::GetNextCollapseEdges(int numEdges) {
             }
         }
     }
+    startEdge = 0;
 }
 
 void *PM::FindAndCollapseEdge(void *threadarg) {
@@ -431,9 +447,7 @@ void *PM::FindAndCollapseEdge(void *threadarg) {
     Edge *cE = collapseEdges[my_data->thread_id];
     if (!cE)
         return NULL;
-    XMeshLib::VSplitRecord vsRec;
-    my_data->pm_ptr->EdgeCollapse(cE, vsRec);
-//    my_data->pm_ptr->vsRecList.push_back(vsRec);
+    my_data->pm_ptr->EdgeCollapse(cE, my_data->vsRec);
     return NULL;
 }
 
@@ -441,6 +455,7 @@ void PM::ProcessCoarsening(int targetDisplacement) {
     pthread_t threads[NUM_THREADS];
     struct thread_data td[NUM_THREADS];
 
+    pthread_mutex_init(&mutexLock, NULL);
     int targetVertSize = currentMeshResolution - targetDisplacement;
     for (int i = 0; i < NUM_THREADS; ++i) {
         td[i].thread_id = i;
@@ -448,27 +463,36 @@ void PM::ProcessCoarsening(int targetDisplacement) {
     }
     for (; currentMeshResolution > targetVertSize;) {
         GetNextCollapseEdges(NUM_THREADS);
-        for (int i = 0; i < collapseEdges.size(); i++) {
-            std::cout << "Thread" << i << std::endl;
+        int edgeCollapseSize = collapseEdges.size();
+        for (int i = 0; i < edgeCollapseSize; i++) {
+//            std::cout << "Thread" << i << " " << collapseEdges[i]->index() << std::endl;
             int rc = pthread_create(&threads[i], NULL, &PM::FindAndCollapseEdge, (void *) &td[i]);
             if (rc) {
                 std::cout << "Error:unable to create thread," << rc << std::endl;
                 exit(-1);
             }
         }
-        for (int i = 0; i < collapseEdges.size(); i++) {
+        for (int i = 0; i < edgeCollapseSize; ++i) {
             int rc = pthread_join(threads[i], NULL);
         }
-        currentMeshResolution -= collapseEdges.size();
+        for (int i = 0; i < edgeCollapseSize; ++i) {
+            vsRecList.push_back(td[i].vsRec);
+        }
+        currentMeshResolution -= NUM_THREADS;
     }
 }
 
 void PM::ProcessRefinement(int targetDisplacement) {
+    std::vector <XMeshLib::VSplitRecord> unrefined;
     for (int iter = 0; iter < targetDisplacement && !vsRecList.empty(); ++iter) {
         XMeshLib::VSplitRecord &vsRec = vsRecList.back();
-        VertexSplit(vsRec);
+        int err_code = VertexSplit(vsRec);
+        if (err_code < 0) {
+            unrefined.push_back(vsRec);
+        }
         vsRecList.pop_back();
     }
+    vsRecList.insert(vsRecList.end(), unrefined.begin(), unrefined.end());
     currentMeshResolution += targetDisplacement;
 }
 

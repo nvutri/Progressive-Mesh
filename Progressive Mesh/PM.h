@@ -18,6 +18,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <pthread.h>
+#include <set>
 
 namespace XMeshLib {
     class PM { //Currently implemented for closed meshes only
@@ -48,7 +49,7 @@ namespace XMeshLib {
         bool CheckEdgeCollapseCondition(Edge *e);
 
         Vertex *EdgeCollapse(Edge *e, VSplitRecord &vsRec); //Currently for closed surfaces only
-        void VertexSplit(VSplitRecord &vsRec);
+        int VertexSplit(VSplitRecord &vsRec);
 
         bool WriteVsplitRecord(const char filename[], std::vector<VSplitRecord> &vsRecList);
 
@@ -67,13 +68,12 @@ namespace XMeshLib {
         std::vector<VSplitRecord> vsRecList;
         std::vector<int> tmpInd2OInd;
         // std::vector<int> oInd2TmpInd;
-        pthread_mutex_t mutexLock;
     protected:
         Vertex *CreateVertex();
 
-        Face *CreateFace();
+        Face *CreateFace(int faceIndex);
 
-        Edge *CreateEdge(Halfedge *he0, Halfedge *he1);
+        Edge *CreateEdge(int edgeIndex, Halfedge *he0, Halfedge *he1);
 
         void DeleteVertex(Vertex *v);
 

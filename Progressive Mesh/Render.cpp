@@ -389,8 +389,11 @@ Point Render::ComputeVertexNormal(Vertex *v) {
     for (VertexFaceIterator vfit(v); !vfit.end(); ++vfit) {
         Face *f = *vfit;
         Halfedge *he = f->he();
-        while (he->source()->index() != v->index())
+        int counter = 0;
+        while (he->source()->index() != v->index() && counter < 3) {
             he = he->next();
+            ++counter;
+        }
         Point &p1 = he->source()->point();
         Point &p2 = he->target()->point();
         Point &p3 = he->next()->target()->point();
