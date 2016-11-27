@@ -116,7 +116,7 @@ public:
     std::vector<Face *> m_faces;        // face container
 
     //a temporary container to store halfedges surrounding some vertices
-    std::vector<std::vector<Halfedge *>> v_adjInHEList;
+    std::vector<std::vector<Halfedge*> > v_adjInHEList;
 
 protected:
     friend class MeshVertexIterator;

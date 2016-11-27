@@ -2,18 +2,9 @@
 #include <cassert>
 #include <fstream>
 
-#ifdef __APPLE__
-
-#else
-#include <GL/glut.h>
-#include "MeshLib_Core\Mesh.h"
-#include "MeshLib_Core\Iterators.h"
-#include "Utils\Heaps\Fib_Heap.h"
-#endif
-
 #include "XLibCommon.h"
 
-#define NUM_THREADS 128
+#define NUM_THREADS 1
 
 pthread_mutex_t mutexLock;
 

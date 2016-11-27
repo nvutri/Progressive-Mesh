@@ -10,8 +10,8 @@
 
 #else
 #include <GL/glut.h>
-#include "MeshLib_Core\Mesh.h"
-#include "MeshLib_Core\Iterators.h"
+#include "MeshLib_Core/Mesh.h"
+#include "MeshLib_Core/Iterators.h"
 #endif
 
 #include "VSplitRecord.h"
