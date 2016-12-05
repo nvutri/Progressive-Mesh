@@ -7,22 +7,21 @@ class Halfedge;
 
 class Edge {
 public:
-
-
     Edge() {
         m_halfedge[0] = NULL;
         m_halfedge[1] = NULL;
         m_propertyIndex = -1;
+        visible = true;
     }
 
     Edge(Halfedge *he0, Halfedge *he1) {
         m_halfedge[0] = he0;
         m_halfedge[1] = he1;
         m_propertyIndex = -1;
+        visible = true;
     }
 
     ~Edge() {
-        ;
     }
 
     // Pointers for Halfedge Data Structure
@@ -48,13 +47,22 @@ public:
         return m_propertyStr;
     }
 
+    void setHalfEdge(Halfedge *he0, Halfedge *he1) {
+        m_halfedge[0] = he0;
+        m_halfedge[1] = he1;
+    }
+
 protected:
     //for Halfedge Data Structure
     Halfedge *m_halfedge[2];        // for boundary edge, m_halfedge[1]=NULL
 
     //optional
-    std::string m_propertyStr;        // a string to store edge properties
-    int m_propertyIndex;    // index to Property array
+    std::string m_propertyStr;  // a string to store edge properties
+    int m_propertyIndex;  // index to Property array
+
+public:
+    bool visible = true;
 };
+
 
 #endif

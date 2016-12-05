@@ -23,13 +23,13 @@ class Mesh {
     //////////////								Methods										//////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 public:
-    //(1) Constructor and Destructor
+    // (1) Constructor and Destructor
     Mesh();
 
-    //Mesh::Mesh(std::vector<Face*>& faces);
+    // Mesh::Mesh(std::vector<Face*>& faces);
     ~Mesh();
 
-    //(2) I/O
+    // (2) I/O
     int numVertices() {
         return m_verts.size();
     }                            //number of vertices
@@ -91,7 +91,6 @@ public:
     Edge *createEdge();
 
     Edge *createEdge(Halfedge *he0, Halfedge *he1);
-
 
     void LabelBoundaryVertices();
 

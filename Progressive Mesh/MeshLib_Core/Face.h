@@ -8,10 +8,11 @@ public:
     Face() {
         m_halfedge = NULL;
         m_propertyIndex = -1;
+        visible = true;
     }
 
     ~Face() {
-        ;
+      ;
     }
 
     // Pointers for Halfedge Data Structure.
@@ -35,6 +36,9 @@ protected:
     // Optional
     std::string m_propertyStr;
     int m_propertyIndex; // index to Property array
+
+public:
+    bool visible;
 };
 
 

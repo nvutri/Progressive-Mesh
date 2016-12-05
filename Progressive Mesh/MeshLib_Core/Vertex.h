@@ -10,6 +10,7 @@ public:
         m_halfedge = NULL;
         m_boundary = false;
         m_propertyIndex = -1;
+        visible = true;
     }
 
     ~Vertex() {
@@ -48,6 +49,8 @@ public:
         return m_propertyStr;
     }
 
+public:
+    bool visible;
 
 protected:
     //for Halfedge Data Structure
@@ -61,4 +64,3 @@ protected:
 };
 
 #endif
-

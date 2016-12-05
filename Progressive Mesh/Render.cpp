@@ -9,6 +9,7 @@
 #include <sstream>
 #include <queue>
 #include <set>
+#define REFINE_STEP 1000
 
 float whratio;
 int win_height, win_width;
@@ -59,11 +60,13 @@ void Render::handleKeypress(unsigned char key, int x, int y) {
         pressedGaussianCurvature = !pressedGaussianCurvature;
         display();
     } else if (key == 117) {
-        pCPM->ProcessRefinement(100);
+        // u key.
+        pCPM->ProcessRefinement(REFINE_STEP);
         ComputeNormal();
         display();
     } else if (key == 100) {
-        pCPM->ProcessCoarsening(100);
+        // d key.
+        pCPM->ProcessCoarsening(REFINE_STEP);
         ComputeNormal();
         display();
     }
@@ -248,10 +251,10 @@ Render triangle meshes.
  */
 void Render::Render_Mesh() {
     glColor3f(0.7f, 0.7f, 0.7f);
-    //traverse all the face and draw them
+    // traverse all the face and draw them
     for (MeshFaceIterator fit(pmesh); !fit.end(); ++fit) {
         Face *f = *fit;
-        if (f) {
+        if (f && f->visible) {
             Halfedge *he = f->he();
             Vertex *v1 = he->source();
             Vertex *v2 = he->target();
@@ -285,7 +288,7 @@ void Render::ComputeBoundingBox() {
 
     for (MeshVertexIterator vit(pmesh); !vit.end(); ++vit) {
         Vertex *v = *vit;
-        if (v) {
+        if (v && v->visible) {
             Point &p = v->point();
             for (int j = 0; j < 3; ++j) {
                 float value = float(p.v[j]);
@@ -362,7 +365,7 @@ void Render::ComputeNormal() {
     vertexesGaussian.resize((unsigned long) pmesh->numVertices() * 2);
     for (MeshFaceIterator fit(pmesh); !fit.end(); ++fit) {
         Face *f = *fit;
-        if (f) {
+        if (f && f->visible) {
             Halfedge *he = f->he();
             // Get the vertex normal for every vertex.
             FaceNormal fn;
