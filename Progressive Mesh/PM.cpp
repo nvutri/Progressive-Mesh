@@ -48,11 +48,7 @@ bool PM::CheckEdgeCollapseCondition(Edge *e) {
     std::sort(set2.begin(), set2.end());
     std::vector<int> intSet(set1.size() + set2.size());
     std::vector<int>::iterator it = std::set_intersection(set1.begin(), set1.end(), set2.begin(), set2.end(), intSet.begin());
-    intSet.resize(it - intSet.begin());
-
-    if (intSet.size() == 2)
-        return true;
-    return false;
+    return (it - intSet.begin()) == 2;
 }
 
 Vertex *PM::EdgeCollapse(Edge *e, VSplitRecord &vsRec) {
@@ -125,8 +121,25 @@ Vertex *PM::EdgeCollapse(Edge *e, VSplitRecord &vsRec) {
     return NULL;
 }
 
+void *PM::FindAndCollapseEdge(void *threadarg) {
+    struct thread_data *my_data = (struct thread_data *) threadarg;
+    int left = my_data->thread_id * my_data->jobSize;
+    int right = (my_data->thread_id+1) * my_data->jobSize;
+    if (right > collapseEdges.size()) {
+      right = collapseEdges.size();
+    }
+    for (int index = left; index < right; index++) {
+      Edge *cE = collapseEdges[index];
+      if (!cE)
+          return NULL;
+      my_data->pm_ptr->EdgeCollapse(cE, my_data->vsRec);
+    }
+    return NULL;
+}
+
 int PM::VertexSplit(VSplitRecord &vsRec) {
-    //(0) Obtain prestored primitives from vsplitRecord, and undeleted primitives from halfedge data structure
+    // (0) Obtain prestored primitives from vsplitRecord,
+    // and undeleted primitives from halfedge data structure
     Vertex *vt = vsRec.vt;
     Vertex *vs = vsRec.vs;    // tMesh->indVertex(vsRec.vs_ind);
     Vertex *vl = vsRec.vl;    // tMesh->indVertex(vsRec.vl_ind);
@@ -143,7 +156,6 @@ int PM::VertexSplit(VSplitRecord &vsRec) {
     // (2) Create new primitives
     assert(!tMesh->m_verts[vt->index()]->visible);
     tMesh->m_verts[vt->index()]->visible = true;
-    // tMesh->m_verts[vt->index()] = vt;
     Halfedge *phe[6];
     for (int i = 0; i < 6; ++i) {
         phe[i] = new Halfedge;
@@ -156,7 +168,9 @@ int PM::VertexSplit(VSplitRecord &vsRec) {
     Face *f0 = CreateFace(vsRec.face1);
     Face *f1 = CreateFace(vsRec.face2);
 
-    //(2) Collect following ccw order, about vt, all in halfedges from dhe4->prev() to dhe5. These he's target should be linked to vt
+    // (2) Collect following ccw order, about vt,
+    // all in halfedges from dhe4->prev() to dhe5.
+    // These he's target should be linked to vt
     Halfedge *che = dhe4->prev();
     std::vector<Halfedge *> cheList;
     while (che != dhe5) {
@@ -165,7 +179,7 @@ int PM::VertexSplit(VSplitRecord &vsRec) {
     };
     cheList.push_back(dhe5);
 
-    //(3) Link primitives
+    // (3) Link primitives
     // a. between halfedges
     phe[0]->next() = phe[2];
     phe[0]->prev() = phe[4];

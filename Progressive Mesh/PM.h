@@ -29,11 +29,6 @@ namespace XMeshLib {
             currentMeshResolution = cMesh->numVertices();
         }
 
-//        ~PM() {
-//            if (tmpMesh)
-//                delete tmpMesh;
-//        }
-
         void SetEdgePriority();
 
         void ProcessCoarsening(int targetVertSize = 4);
@@ -42,7 +37,7 @@ namespace XMeshLib {
 
         static void *FindAndCollapseEdge(void *);
 
-        void GetNextCollapseEdges(int numEdges);
+        void GetNextCollapseEdges();
 
         Edge *GetNextCollapseEdge();
 
