@@ -1,5 +1,6 @@
-#include <thrust/remove.h>
 #include <thrust/execution_policy.h>
+#include <thrust/remove.h>
+#include <thrust/set_operations.h>
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
 
@@ -124,21 +125,6 @@ Vertex *PM::EdgeCollapse(Edge *e, VSplitRecord &vsRec) {
     return NULL;
 }
 
-void *PM::FindAndCollapseEdge(void *threadarg) {
-    struct thread_data *my_data = (struct thread_data *) threadarg;
-    int left = my_data->thread_id * my_data->jobSize;
-    int right = (my_data->thread_id+1) * my_data->jobSize;
-    if (right > collapseEdges.size()) {
-      right = collapseEdges.size();
-    }
-    for (int index = left; index < right; index++) {
-      Edge *cE = collapseEdges[index];
-      if (!cE)
-          return NULL;
-      my_data->pm_ptr->EdgeCollapse(cE, my_data->vsRec);
-    }
-    return NULL;
-}
 
 int PM::VertexSplit(VSplitRecord &vsRec) {
     // (0) Obtain prestored primitives from vsplitRecord,
@@ -417,13 +403,11 @@ void PM::GetNextCollapseEdges(int numEdges) {
             }
         }
     }
-    startEdge = 0;
 }
 
 void *PM::FindAndCollapseEdge(void *threadarg) {
-// __global__ void FindAndCollapseEdge(void) {
     struct thread_data *my_data = (struct thread_data *) threadarg;
-    Edge *cE = collapseEdges[my_data->thread_id];
+    Edge *cE = my_data->edge;
     if (!cE)
         return NULL;
     my_data->pm_ptr->EdgeCollapse(cE, my_data->vsRec);
@@ -440,12 +424,26 @@ void PM::ProcessCoarsening(int targetDisplacement) {
         td[i].thread_id = i;
         td[i].pm_ptr = this;
     }
+    int *visibleEdges = new int [tMesh->numEdges()];
+    int counter=0;
+    for (MeshEdgeIterator eit(tMesh); !eit.end(); ++eit) {
+        visibleEdges[counter++] = (*eit)->index();
+    }
+    int result[tMesh->numEdges()];
+    int *result_end = thrust::set_difference(
+      thrust::host,
+      visibleEdges, visibleEdges+tMesh->numEdges(),
+      collapseEdges.begin(), collapseEdges.end(),
+      result);
     for (; currentMeshResolution > targetVertSize;) {
+        int edgeCollapseSize = NUM_THREADS;
         GetNextCollapseEdges(NUM_THREADS);
-        int edgeCollapseSize = collapseEdges.size();
-        int size = edgeCollapseSize * sizeof(int);
-        // cudaMalloc((void **)&collapseEdges, size);
-        // thrust::device_vector<int> deviceCollapse = collapseEdges;
+        result_end = thrust::set_difference(
+            thrust::host,
+            result, result_end,
+            collapseEdges.begin(), collapseEdges.end(),
+            result);
+        std::cout << result_end - result << std::endl;
         for (int i = 0; i < edgeCollapseSize; i++) {
             // std::cout << "Thread " << i << " " << collapseEdges[i]->index() << std::endl;
             td[i].edge = tMesh->indEdge(collapseEdges[i]);
