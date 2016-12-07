@@ -1,3 +1,5 @@
+#include <thrust/remove.h>
+#include <thrust/execution_policy.h>
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
 
@@ -14,10 +16,11 @@ pthread_mutex_t mutexLock;
 using namespace XMeshLib;
 
 
-thrust::host_vector<Edge *> collapseEdges;
+thrust::host_vector<int> collapseEdges;
 struct thread_data {
     int thread_id;
     PM *pm_ptr;
+    Edge *edge;
     XMeshLib::VSplitRecord vsRec;
 };
 
@@ -368,13 +371,12 @@ Edge *PM::GetNextCollapseEdge() {
         return minE.first;
 }
 
-int startEdge = 0;
 void PM::GetNextCollapseEdges(int numEdges) {
     collapseEdges.clear();
     double LIMIT = 1e10;
     std::set<Edge *> chosenEdges;
-    for (; startEdge < tMesh->numEdges(); ++startEdge) {
-        Edge *e = tMesh->indEdge(startEdge);
+    for (MeshEdgeIterator eit(tMesh); !eit.end(); ++eit) {
+        Edge *e = *eit;
         if (e->visible) {
             std::set<Edge *>::iterator ePos = std::find(chosenEdges.begin(), chosenEdges.end(), e);
             if (ePos == chosenEdges.end()) {
@@ -382,34 +384,34 @@ void PM::GetNextCollapseEdges(int numEdges) {
                 Point &p0 = e->he(0)->target()->point();
                 Point &p1 = e->he(1)->target()->point();
                 clen = (p0 - p1).norm();
-                if (clen < LIMIT) {
-                    bool canCollapse = CheckEdgeCollapseCondition(e);
-                    if (canCollapse) {
-                        collapseEdges.push_back(e);
-                        chosenEdges.insert(e);
-                        Halfedge *phe[6];
-                        phe[0] = e->he(0);
-                        phe[1] = e->he(1);
-                        phe[2] = phe[0]->next();
-                        phe[4] = phe[0]->prev();
-                        phe[3] = phe[1]->prev();
-                        phe[5] = phe[1]->next();
-                        std::vector<Vertex *> chosenVertices;
-                        chosenVertices.push_back(phe[0]->target());
-                        chosenVertices.push_back(phe[1]->target());
-                        chosenVertices.push_back(phe[2]->target());
-                        chosenVertices.push_back(phe[5]->target());
-                        for (int vIndex = 0; vIndex < chosenVertices.size(); ++vIndex) {
-                            for (VertexFaceIterator faceIt(chosenVertices.at(vIndex)); !faceIt.end(); ++faceIt) {
-                                for (FaceEdgeIterator edgeIt(*faceIt); !edgeIt.end(); ++edgeIt) {
-                                    chosenEdges.insert(*edgeIt);
-                                }
+                bool canCollapse = CheckEdgeCollapseCondition(e);
+                if (clen <LIMIT && canCollapse) {
+                    collapseEdges.push_back(e->index());
+                    chosenEdges.insert(e);
+                    e->visible = false;
+                    Halfedge *phe[6];
+                    phe[0] = e->he(0);
+                    phe[1] = e->he(1);
+                    phe[2] = phe[0]->next();
+                    phe[4] = phe[0]->prev();
+                    phe[3] = phe[1]->prev();
+                    phe[5] = phe[1]->next();
+                    std::vector<Vertex *> chosenVertices;
+
+                    chosenVertices.push_back(phe[0]->target());
+                    chosenVertices.push_back(phe[1]->target());
+                    chosenVertices.push_back(phe[2]->target());
+                    chosenVertices.push_back(phe[5]->target());
+                    for (int vIndex = 0; vIndex < chosenVertices.size(); ++vIndex) {
+                        for (VertexFaceIterator faceIt(chosenVertices.at(vIndex)); !faceIt.end(); ++faceIt) {
+                            for (FaceEdgeIterator edgeIt(*faceIt); !edgeIt.end(); ++edgeIt) {
+                                chosenEdges.insert(*edgeIt);
                             }
                         }
+                    }
 //                        std::cout << collapseEdges.size() << " " << e->index() << std::endl;
-                        if (collapseEdges.size() == numEdges) {
-                            return;
-                        }
+                    if (collapseEdges.size() == numEdges) {
+                        return;
                     }
                 }
             }
@@ -446,6 +448,7 @@ void PM::ProcessCoarsening(int targetDisplacement) {
         // thrust::device_vector<int> deviceCollapse = collapseEdges;
         for (int i = 0; i < edgeCollapseSize; i++) {
             // std::cout << "Thread " << i << " " << collapseEdges[i]->index() << std::endl;
+            td[i].edge = tMesh->indEdge(collapseEdges[i]);
             int rc = pthread_create(&threads[i], NULL, &PM::FindAndCollapseEdge, (void *) &td[i]);
             if (rc) {
                 std::cout << "Error:unable to create thread," << rc << std::endl;

@@ -109,12 +109,12 @@ public:
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 public:
-    //stdext::hash_map<Vertex *, int> vertIndex;
+    // stdext::hash_map<Vertex *, int> vertIndex;
     std::vector<Edge *> m_edges;        // edge container
     std::vector<Vertex *> m_verts;        // vertex container
     std::vector<Face *> m_faces;        // face container
 
-    //a temporary container to store halfedges surrounding some vertices
+    // a temporary container to store halfedges surrounding some vertices
     std::vector<std::vector<Halfedge*> > v_adjInHEList;
 
 protected:

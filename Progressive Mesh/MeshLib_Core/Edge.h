@@ -61,7 +61,7 @@ protected:
     int m_propertyIndex;  // index to Property array
 
 public:
-    bool visible = true;
+    bool visible;
 };
 
 
