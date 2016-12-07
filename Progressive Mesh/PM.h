@@ -37,7 +37,7 @@ namespace XMeshLib {
 
         static void *FindAndCollapseEdge(void *);
 
-        void GetNextCollapseEdges();
+        void GetNextCollapseEdges(int num_edges);
 
         Edge *GetNextCollapseEdge();
 

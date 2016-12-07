@@ -18,6 +18,8 @@ using namespace XMeshLib;
 
 
 thrust::host_vector<int> collapseEdges;
+int *visibleEdges;
+int *visibleEdgesEnd;
 struct thread_data {
     int thread_id;
     PM *pm_ptr;
@@ -358,11 +360,12 @@ Edge *PM::GetNextCollapseEdge() {
 }
 
 void PM::GetNextCollapseEdges(int numEdges) {
-    collapseEdges.clear();
     double LIMIT = 1e10;
     std::set<Edge *> chosenEdges;
-    for (MeshEdgeIterator eit(tMesh); !eit.end(); ++eit) {
-        Edge *e = *eit;
+    collapseEdges.clear();
+
+    for (int *visibleEdgesIt = visibleEdges; visibleEdgesIt != visibleEdgesEnd; ++visibleEdgesIt) {
+        Edge *e = tMesh->indEdge(*visibleEdgesIt);
         if (e->visible) {
             std::set<Edge *>::iterator ePos = std::find(chosenEdges.begin(), chosenEdges.end(), e);
             if (ePos == chosenEdges.end()) {
@@ -374,7 +377,6 @@ void PM::GetNextCollapseEdges(int numEdges) {
                 if (clen <LIMIT && canCollapse) {
                     collapseEdges.push_back(e->index());
                     chosenEdges.insert(e);
-                    e->visible = false;
                     Halfedge *phe[6];
                     phe[0] = e->he(0);
                     phe[1] = e->he(1);
@@ -424,26 +426,25 @@ void PM::ProcessCoarsening(int targetDisplacement) {
         td[i].thread_id = i;
         td[i].pm_ptr = this;
     }
-    int *visibleEdges = new int [tMesh->numEdges()];
-    int counter=0;
+    visibleEdges = new int [tMesh->numEdges()];
+    int counter = 0;
     for (MeshEdgeIterator eit(tMesh); !eit.end(); ++eit) {
         visibleEdges[counter++] = (*eit)->index();
     }
-    int result[tMesh->numEdges()];
-    int *result_end = thrust::set_difference(
+    visibleEdgesEnd = thrust::set_difference(
       thrust::host,
-      visibleEdges, visibleEdges+tMesh->numEdges(),
+      visibleEdges, visibleEdges + tMesh->numEdges(),
       collapseEdges.begin(), collapseEdges.end(),
-      result);
+      visibleEdges);
+    int iteration = 0;
     for (; currentMeshResolution > targetVertSize;) {
-        int edgeCollapseSize = NUM_THREADS;
         GetNextCollapseEdges(NUM_THREADS);
-        result_end = thrust::set_difference(
+        visibleEdgesEnd = thrust::set_difference(
             thrust::host,
-            result, result_end,
+            visibleEdges, visibleEdgesEnd,
             collapseEdges.begin(), collapseEdges.end(),
-            result);
-        std::cout << result_end - result << std::endl;
+            visibleEdges);
+        int edgeCollapseSize = NUM_THREADS;
         for (int i = 0; i < edgeCollapseSize; i++) {
             // std::cout << "Thread " << i << " " << collapseEdges[i]->index() << std::endl;
             td[i].edge = tMesh->indEdge(collapseEdges[i]);
